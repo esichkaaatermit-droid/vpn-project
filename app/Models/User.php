@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -21,6 +22,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'telegram_id',
+        'telegram_username',
     ];
 
     /**
@@ -43,6 +46,37 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'telegram_id' => 'integer',
         ];
+    }
+
+    /**
+     * Платежи пользователя.
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    /**
+     * Найти или создать пользователя по Telegram ID.
+     */
+    public static function findOrCreateByTelegramId(int $telegramId, ?string $username = null, ?string $name = null): self
+    {
+        return self::firstOrCreate(
+            ['telegram_id' => $telegramId],
+            [
+                'telegram_username' => $username,
+                'name' => $name ?? "User {$telegramId}",
+            ]
+        );
+    }
+
+    /**
+     * Найти пользователя по Telegram ID.
+     */
+    public static function findByTelegramId(int $telegramId): ?self
+    {
+        return self::where('telegram_id', $telegramId)->first();
     }
 }

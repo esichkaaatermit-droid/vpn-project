@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\BotMapController;
+use App\Http\Controllers\Admin\BotMapController;
 
 Route::get('/', function () {
     return view('welcome');

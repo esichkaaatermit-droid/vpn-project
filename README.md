@@ -1,59 +1,260 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# VPN Telegram Bot
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Telegram-бот для VPN сервиса на Laravel 11.
 
-## About Laravel
+## Настройка
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### 1. Переменные окружения
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Добавьте в файл `.env`:
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+```env
+# Telegram Bot
+TELEGRAM_BOT_TOKEN=123456789:ABCDefGhIJKlmnOPQrstUVwxyz
+TELEGRAM_WEBHOOK_URL=https://yourdomain.com/api/telegram/webhook
+TELEGRAM_WEBHOOK_SECRET=your_secret_token_here
 
-## Learning Laravel
+# Настройки бота
+TELEGRAM_START_SCREEN=main.menu
+TELEGRAM_STATE_TTL=24
+```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+### 2. Миграции
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```bash
+php artisan migrate
+```
 
-## Laravel Sponsors
+### 3. Сидер (заполнение экранов)
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```bash
+php artisan db:seed --class=ScreensSeeder
+```
 
-### Premium Partners
+### 4. Установка Webhook
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+```bash
+# Через artisan команду
+php artisan telegram:set-webhook
 
-## Contributing
+# Или через curl
+curl -X POST "https://api.telegram.org/bot{TOKEN}/setWebhook" \
+    -d "url={WEBHOOK_URL}" \
+    -d "secret_token={SECRET}"
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### 5. Запуск сервера
 
-## Code of Conduct
+```bash
+php artisan serve
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+---
 
-## Security Vulnerabilities
+## Структура проекта
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### Таблицы БД
 
-## License
+#### `screens` — экраны бота
+| Поле | Тип | Описание |
+|------|-----|----------|
+| id | bigint | PK |
+| key | string(255) | Уникальный ключ экрана (например, `faq.main`) |
+| title | string(255) | Заголовок экрана |
+| text | text | Текст сообщения |
+| handler_id | string(255) | ID обработчика (НЕ имя класса!) |
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+#### `screen_buttons` — кнопки экранов
+| Поле | Тип | Описание |
+|------|-----|----------|
+| id | bigint | PK |
+| screen_id | bigint | FK → screens.id |
+| text | string(255) | Текст кнопки |
+| next_screen_key | string(255) | Key экрана, куда ведёт кнопка |
+| order | integer | Порядок кнопки |
+
+#### `user_states` — состояние пользователей
+| Поле | Тип | Описание |
+|------|-----|----------|
+| id | bigint | PK |
+| chat_id | bigint | Telegram chat ID |
+| current_screen_key | string(255) | Текущий экран пользователя |
+| data | json | Дополнительные данные сессии |
+
+### Как добавить новый экран
+
+1. Добавьте экран в `database/seeders/ScreensSeeder.php`:
+
+```php
+$screen = Screen::create([
+    'key' => 'my_section.my_screen',
+    'title' => 'Мой экран',
+    'text' => 'Текст экрана',
+    'handler_id' => 'my_section.my_screen', // опционально
+]);
+
+ScreenButton::create([
+    'screen_id' => $screen->id,
+    'text' => 'Кнопка 1',
+    'next_screen_key' => 'another.screen',
+    'order' => 1,
+]);
+```
+
+2. Запустите сидер:
+```bash
+php artisan db:seed --class=ScreensSeeder
+```
+
+### Как создать новый Handler
+
+1. Создайте класс в `app/Bot/Handlers/`:
+
+```php
+<?php
+
+namespace App\Bot\Handlers;
+
+use App\Models\Screen;
+
+class MyHandler implements HandlerInterface
+{
+    public function handle(Screen $screen, int $chatId, array $update): array
+    {
+        return [
+            'text' => 'Динамический текст',
+            'buttons' => [
+                ['text' => 'Кнопка', 'callback_data' => 'next.screen']
+            ],
+        ];
+    }
+}
+```
+
+2. Зарегистрируйте в `app/Bot/HandlerRegistry.php`:
+
+```php
+protected static array $handlers = [
+    'my_section.my_screen' => MyHandler::class,
+];
+```
+
+---
+
+## Интеграция
+
+### Интеграционные сервисы
+
+Сервисы в `App\Services\Integration` работают на **заглушках** и готовы к замене на реальные API-запросы.
+
+| Сервис | Файл | Описание |
+|--------|------|----------|
+| `UserService` | `app/Services/Integration/UserService.php` | Профиль пользователя, подписки |
+| `TariffService` | `app/Services/Integration/TariffService.php` | Список тарифов, цены |
+| `ConfigService` | `app/Services/Integration/ConfigService.php` | VPN конфигурации, QR-коды |
+
+### Как заменить на реальный API
+
+1. Откройте нужный сервис
+2. Найдите методы с комментарием `// TODO: Заменить на реальный API-запрос`
+3. Замените заглушку на HTTP-запрос:
+
+```php
+// Было (заглушка):
+return [
+    'email' => $email,
+    'tariff' => 'Start',
+    // ...
+];
+
+// Стало (реальный API):
+$response = Http::get(config('services.backend.url') . '/api/users/profile', [
+    'email' => $email
+]);
+return $response->json();
+```
+
+---
+
+## Маршруты
+
+### API (`routes/api.php`)
+
+| Метод | URL | Описание |
+|-------|-----|----------|
+| POST | `/api/telegram/webhook` | Webhook от Telegram |
+| GET | `/api/telegram/webhook-info` | Информация о webhook |
+
+### Web (`routes/web.php`)
+
+| Метод | URL | Описание |
+|-------|-----|----------|
+| GET | `/admin/bot-map` | HTML-карта сценария |
+
+---
+
+## Структура файлов
+
+```
+app/
+├── Bot/
+│   ├── HandlerRegistry.php          # Реестр обработчиков
+│   └── Handlers/
+│       ├── HandlerInterface.php     # Интерфейс
+│       ├── MainMenuHandler.php      # Главное меню
+│       ├── ProfileHandler.php       # Профиль
+│       └── TariffHandler.php        # Тарифы
+├── Http/Controllers/
+│   ├── Admin/
+│   │   └── BotMapController.php     # HTML-карта
+│   └── Telegram/
+│       └── WebhookController.php    # Webhook
+├── Models/
+│   ├── Screen.php                   # Экраны
+│   ├── ScreenButton.php             # Кнопки
+│   ├── User.php                     # Пользователи
+│   └── UserState.php                # Состояние
+├── Services/
+│   ├── Integration/
+│   │   ├── UserService.php          # Заглушка API пользователей
+│   │   ├── TariffService.php        # Заглушка API тарифов
+│   │   └── ConfigService.php        # Заглушка API конфигов
+│   └── Telegram/
+│       └── BotService.php           # Основной сервис бота
+config/
+└── telegram.php                     # Конфигурация бота
+database/
+├── migrations/
+│   ├── *_create_screens_table.php
+│   ├── *_create_screen_buttons_table.php
+│   └── *_create_user_states_table.php
+└── seeders/
+    └── ScreensSeeder.php            # Заполнение экранов
+```
+
+---
+
+## Команды Artisan
+
+```bash
+# Установить webhook
+php artisan telegram:set-webhook
+
+# Удалить webhook
+php artisan telegram:delete-webhook
+
+# Запустить миграции
+php artisan migrate
+
+# Заполнить экраны
+php artisan db:seed --class=ScreensSeeder
+```
+
+---
+
+## Важные правила
+
+1. **Строковые ID** — в `handler_id` хранятся ТОЛЬКО строки (`profile.my_profile`), НЕ имена классов
+2. **Связи через key** — кнопки ссылаются на экраны через `next_screen_key` → `screens.key`
+3. **Обработчики опциональны** — экран может работать без `handler_id`
+4. **Заглушки** — сервисы в `Integration/` содержат тестовые данные, заменить на API позже
