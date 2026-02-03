@@ -40,7 +40,7 @@ class BotService
 
         // Проверяем команду /start
         if ($text === '/start') {
-            $this->showScreen($chatId, 'start');
+            $this->showScreen($chatId, 'main.menu');
             return;
         }
 
@@ -61,7 +61,7 @@ class BotService
         }
 
         // Если текст не распознан, показываем стартовый экран
-        $this->showScreen($chatId, 'start');
+        $this->showScreen($chatId, 'main.menu');
     }
 
     /**

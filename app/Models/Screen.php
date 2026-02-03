@@ -40,7 +40,7 @@ class Screen extends Model
      */
     public static function getStartScreen(): ?self
     {
-        return static::findByKey('start');
+        return static::findByKey('main.menu');
     }
 
     /**
