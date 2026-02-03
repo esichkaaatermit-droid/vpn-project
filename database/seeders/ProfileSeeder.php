@@ -21,7 +21,7 @@ class ProfileSeeder extends Seeder
         $profileMain = Screen::create([
             'key' => 'profile.main',
             'title' => 'Профиль',
-            'text' => 'Текст о наполнении этого блока. Выберите вопрос, который вас интересует:',
+            'text' => 'Текст о наполнении этого блока + Выберите вопрос, который вас интересует:',
             'handler_id' => 'profile.main',
         ]);
 

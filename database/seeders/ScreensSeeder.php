@@ -64,7 +64,7 @@ class ScreensSeeder extends Seeder
         $tariffsMain = Screen::create([
             'key' => 'tariffs.main',
             'title' => 'Тарифы',
-            'text' => 'Текст о наполнении этого блока. Выберите вопрос, который вас интересует:',
+            'text' => 'Текст о наполнении этого блока + Выберите вопрос, который вас интересует:',
             'handler_id' => 'tariffs.main',
         ]);
 
@@ -444,7 +444,7 @@ class ScreensSeeder extends Seeder
         $faqMain = Screen::create([
             'key' => 'faq.main',
             'title' => 'Вопросы и ответы',
-            'text' => 'Обобщённое приветственное сообщение. Выберите интересующий вас вопрос:',
+            'text' => 'Обобщённое приветственное сообщение + Выберите вопрос, который вас интересует:',
             'handler_id' => 'faq.main',
         ]);
 
