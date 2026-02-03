@@ -11,6 +11,7 @@ use App\Models\Screen;
  * - Загрузка данных пользователя
  * - Формирование динамического контента
  * - Выполнение действий
+ * - Отправка файлов и изображений
  */
 interface HandlerInterface
 {
@@ -20,7 +21,11 @@ interface HandlerInterface
      * @param Screen $screen Модель экрана
      * @param int $chatId Telegram chat ID
      * @param array $update Дополнительные данные (user, user_state, etc.)
-     * @return array ['text' => '...', 'buttons' => [...]]
+     * @return array Возможные ключи:
+     *   - 'text'     => string  Текст сообщения (HTML)
+     *   - 'buttons'  => array   Массив кнопок [['text' => '...', 'callback_data' => '...']]
+     *   - 'photo'    => string  URL или file_id изображения (опционально)
+     *   - 'document' => string  URL, file_id или путь к файлу (опционально)
      */
     public function handle(Screen $screen, int $chatId, array $update): array;
 }

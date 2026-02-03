@@ -126,6 +126,8 @@ class BotService
         // Получаем текст и кнопки
         $text = $screen->text;
         $buttons = [];
+        $photo = null;
+        $document = null;
 
         // Если есть handler_id — вызываем обработчик
         if ($screen->hasHandler()) {
@@ -136,9 +138,11 @@ class BotService
             ]);
             
             if ($result) {
-                // Обработчик может переопределить текст и кнопки
+                // Обработчик может переопределить текст, кнопки, добавить медиа
                 $text = $result['text'] ?? $text;
                 $buttons = $result['buttons'] ?? [];
+                $photo = $result['photo'] ?? null;
+                $document = $result['document'] ?? null;
             }
         }
 
@@ -147,7 +151,18 @@ class BotService
             $buttons = $this->buildButtonsFromScreen($screen);
         }
 
-        // Отправляем сообщение
+        // Отправляем контент в зависимости от типа
+        if ($document) {
+            // Отправляем документ с подписью и кнопками
+            return $this->sendDocument($chatId, $document, $text, $buttons);
+        }
+        
+        if ($photo) {
+            // Отправляем фото с подписью и кнопками
+            return $this->sendPhoto($chatId, $photo, $text, $buttons);
+        }
+
+        // Отправляем текстовое сообщение
         return $this->sendMessage($chatId, $text, $buttons);
     }
 
@@ -215,6 +230,126 @@ class BotService
             Log::error('Telegram API exception', [
                 'message' => $e->getMessage(),
             ]);
+            return false;
+        }
+    }
+
+    /**
+     * Отправить фото с подписью и кнопками.
+     * 
+     * @param int $chatId ID чата
+     * @param string $photo URL или file_id фото
+     * @param string|null $caption Подпись к фото
+     * @param array $buttons Массив кнопок
+     */
+    public function sendPhoto(int $chatId, string $photo, ?string $caption = null, array $buttons = []): bool
+    {
+        $params = [
+            'chat_id' => $chatId,
+            'photo' => $photo,
+        ];
+
+        if ($caption) {
+            $params['caption'] = $caption;
+            $params['parse_mode'] = 'HTML';
+        }
+
+        // Формируем inline keyboard
+        if (!empty($buttons)) {
+            $keyboard = [];
+            foreach ($buttons as $button) {
+                $keyboard[] = [
+                    [
+                        'text' => $button['text'],
+                        'callback_data' => $button['callback_data'] ?? 'noop',
+                    ]
+                ];
+            }
+            $params['reply_markup'] = json_encode([
+                'inline_keyboard' => $keyboard,
+            ]);
+        }
+
+        try {
+            $response = Http::post("{$this->apiUrl}/sendPhoto", $params);
+            
+            if (!$response->successful()) {
+                Log::error('Telegram sendPhoto error', [
+                    'response' => $response->json(),
+                    'photo' => $photo,
+                ]);
+                return false;
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Telegram sendPhoto exception', ['message' => $e->getMessage()]);
+            return false;
+        }
+    }
+
+    /**
+     * Отправить документ (файл) с подписью и кнопками.
+     * 
+     * @param int $chatId ID чата
+     * @param string $document URL, file_id или путь к файлу
+     * @param string|null $caption Подпись к документу
+     * @param array $buttons Массив кнопок
+     * @param string|null $filename Имя файла для отображения
+     */
+    public function sendDocument(int $chatId, string $document, ?string $caption = null, array $buttons = [], ?string $filename = null): bool
+    {
+        $params = [
+            'chat_id' => $chatId,
+        ];
+
+        if ($caption) {
+            $params['caption'] = $caption;
+            $params['parse_mode'] = 'HTML';
+        }
+
+        // Формируем inline keyboard
+        if (!empty($buttons)) {
+            $keyboard = [];
+            foreach ($buttons as $button) {
+                $keyboard[] = [
+                    [
+                        'text' => $button['text'],
+                        'callback_data' => $button['callback_data'] ?? 'noop',
+                    ]
+                ];
+            }
+            $params['reply_markup'] = json_encode([
+                'inline_keyboard' => $keyboard,
+            ]);
+        }
+
+        try {
+            // Проверяем, это локальный файл или URL/file_id
+            if (file_exists($document)) {
+                // Локальный файл — отправляем как multipart
+                $response = Http::attach(
+                    'document',
+                    file_get_contents($document),
+                    $filename ?? basename($document)
+                )->post("{$this->apiUrl}/sendDocument", $params);
+            } else {
+                // URL или file_id
+                $params['document'] = $document;
+                $response = Http::post("{$this->apiUrl}/sendDocument", $params);
+            }
+            
+            if (!$response->successful()) {
+                Log::error('Telegram sendDocument error', [
+                    'response' => $response->json(),
+                    'document' => $document,
+                ]);
+                return false;
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Telegram sendDocument exception', ['message' => $e->getMessage()]);
             return false;
         }
     }
