@@ -24,6 +24,5 @@ class DatabaseSeeder extends Seeder
 
         // Seed bot screens
         $this->call(ScreensSeeder::class);
-        $this->call(DocsSeeder::class);
     }
 }

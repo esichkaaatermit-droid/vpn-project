@@ -340,13 +340,6 @@ class ScreensSeeder extends Seeder
             'order' => 1,
         ]);
 
-        ScreenButton::create([
-            'screen_id' => $tariffsPayment->id,
-            'text' => 'Назад',
-            'next_screen_key' => 'tariffs.main',
-            'order' => 2,
-        ]);
-
         // Экран процесса оплаты (ожидание, через 15 минут если не оплачен → переход на tariffs.pay.failed)
         $tariffsPayProcess = Screen::create([
             'key' => 'tariffs.pay.process',
@@ -622,7 +615,7 @@ class ScreensSeeder extends Seeder
         $faqCancel = Screen::create([
             'key' => 'faq.cancel',
             'title' => 'Отменить подписку',
-            'text' => 'Описание текущего процесса отмены и/или описание того, как это сделать.',
+            'text' => 'Описание текущего процесса отмены и/или описание того, как это сделать по кнопке',
             'handler_id' => 'faq.cancel',
         ]);
 
@@ -635,9 +628,24 @@ class ScreensSeeder extends Seeder
 
         ScreenButton::create([
             'screen_id' => $faqCancel->id,
-            'text' => 'В главное меню',
-            'next_screen_key' => 'main.menu',
+            'text' => 'Отменить подписку',
+            'next_screen_key' => 'faq.cancel.process',
             'order' => 2,
+        ]);
+
+        // Экран процесса отмены подписки
+        $faqCancelProcess = Screen::create([
+            'key' => 'faq.cancel.process',
+            'title' => 'Отмена подписки',
+            'text' => 'Ваша подписка отменена. Вы можете продолжать пользоваться сервисом до окончания оплаченного периода.',
+            'handler_id' => 'faq.cancel.process',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $faqCancelProcess->id,
+            'text' => 'Назад',
+            'next_screen_key' => 'faq.cancel',
+            'order' => 1,
         ]);
 
         // Экран 4 — "Техподдержка"
@@ -650,23 +658,38 @@ class ScreensSeeder extends Seeder
 
         ScreenButton::create([
             'screen_id' => $faqSupport->id,
-            'text' => 'Назад',
-            'next_screen_key' => 'faq.main',
+            'text' => 'Написать в поддержку',
+            'next_screen_key' => 'faq.support.write',
             'order' => 1,
         ]);
 
         ScreenButton::create([
             'screen_id' => $faqSupport->id,
-            'text' => 'В главное меню',
-            'next_screen_key' => 'main.menu',
+            'text' => 'Назад',
+            'next_screen_key' => 'faq.main',
             'order' => 2,
+        ]);
+
+        // Экран написания в поддержку
+        $faqSupportWrite = Screen::create([
+            'key' => 'faq.support.write',
+            'title' => 'Написать в поддержку',
+            'text' => 'Напишите ваш вопрос, и мы ответим в ближайшее время.\n\nТакже вы можете связаться с нами напрямую:\n📧 support@vpn-bot.ru\n💬 @vpn_support',
+            'handler_id' => 'faq.support.write',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $faqSupportWrite->id,
+            'text' => 'Назад',
+            'next_screen_key' => 'faq.support',
+            'order' => 1,
         ]);
 
         // Экран 5 — "О сервисе"
         $faqAbout = Screen::create([
             'key' => 'faq.about',
             'title' => 'О сервисе',
-            'text' => 'Кто мы, на каких платформах доступны, ссылки на канал/сайт',
+            'text' => 'Кто мы/на каких платформах доступны/ссылки на канал, сайт, почта, дни поддержки',
             'handler_id' => 'faq.about',
         ]);
 
@@ -675,13 +698,6 @@ class ScreensSeeder extends Seeder
             'text' => 'Назад',
             'next_screen_key' => 'faq.main',
             'order' => 1,
-        ]);
-
-        ScreenButton::create([
-            'screen_id' => $faqAbout->id,
-            'text' => 'В главное меню',
-            'next_screen_key' => 'main.menu',
-            'order' => 2,
         ]);
 
         // =====================================================
@@ -1690,9 +1706,844 @@ class ScreensSeeder extends Seeder
 
         ScreenButton::create([
             'screen_id' => $mainMenu->id,
+            'text' => 'Профиль',
+            'next_screen_key' => 'profile.main',
+            'order' => 4,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $mainMenu->id,
             'text' => 'Документация',
             'next_screen_key' => 'docs.main',
+            'order' => 5,
+        ]);
+
+        // =====================================================
+        // Ветка "Установить Easy Light"
+        // =====================================================
+
+        $installMain = Screen::create([
+            'key' => 'install.main',
+            'title' => 'Установить Easy Light',
+            'text' => 'Текст о целевом действии + Краткое описание, опционально сюда кнопку на актуальную версию\n\nВыберите ваше устройство:',
+            'handler_id' => 'install.main',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installMain->id,
+            'text' => 'Android',
+            'next_screen_key' => 'install.android',
+            'order' => 1,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installMain->id,
+            'text' => 'iPhone/iPad',
+            'next_screen_key' => 'install.iphone',
+            'order' => 2,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installMain->id,
+            'text' => 'AndroidTV',
+            'next_screen_key' => 'install.androidtv',
+            'order' => 3,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installMain->id,
+            'text' => 'AppleTV',
+            'next_screen_key' => 'install.appletv',
             'order' => 4,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installMain->id,
+            'text' => 'Windows',
+            'next_screen_key' => 'install.windows',
+            'order' => 5,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installMain->id,
+            'text' => 'Mac',
+            'next_screen_key' => 'install.mac',
+            'order' => 6,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installMain->id,
+            'text' => 'Назад',
+            'next_screen_key' => 'main.menu',
+            'order' => 7,
+        ]);
+
+        // --- Android ---
+        $installAndroid = Screen::create([
+            'key' => 'install.android',
+            'title' => 'Android',
+            'text' => 'Инструкция по установке',
+            'handler_id' => 'install.android',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installAndroid->id,
+            'text' => 'Я использую конфиги на Android',
+            'next_screen_key' => 'install.android.config',
+            'order' => 1,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installAndroid->id,
+            'text' => 'У меня хуавей/реалми/апк приложения',
+            'next_screen_key' => 'install.android.huawei',
+            'order' => 2,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installAndroid->id,
+            'text' => 'Что-то не работает',
+            'next_screen_key' => 'install.android.problem',
+            'order' => 3,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installAndroid->id,
+            'text' => 'Другие устройства',
+            'next_screen_key' => 'install.main',
+            'order' => 4,
+        ]);
+
+        // Android - Я использую конфиги
+        $installAndroidConfig = Screen::create([
+            'key' => 'install.android.config',
+            'title' => 'Я использую конфиги на Android',
+            'text' => 'Выдача конфига + инструкция по установке / сформированная ссылка на автоматическое добавление конфига в программу',
+            'handler_id' => 'install.android.config',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installAndroidConfig->id,
+            'text' => 'Что-то не работает',
+            'next_screen_key' => 'install.android.config.problem',
+            'order' => 1,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installAndroidConfig->id,
+            'text' => 'Другие устройства',
+            'next_screen_key' => 'install.main',
+            'order' => 2,
+        ]);
+
+        // Android - Config - Problem
+        $installAndroidConfigProblem = Screen::create([
+            'key' => 'install.android.config.problem',
+            'title' => 'Что-то не работает',
+            'text' => 'Текст о том, что здесь пользователь сможет найти ответы на распространенные проблемы + Выберите ваше устройство:',
+            'handler_id' => 'install.android.config.problem',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installAndroidConfigProblem->id,
+            'text' => 'Выбрать проблему',
+            'next_screen_key' => 'faq.broken.android',
+            'order' => 1,
+        ]);
+
+        // Android - Huawei/Realme/APK
+        $installAndroidHuawei = Screen::create([
+            'key' => 'install.android.huawei',
+            'title' => 'У меня хуавей/реалми/апк приложения',
+            'text' => 'Инструкция по установке для хуавей/реалми/апк',
+            'handler_id' => 'install.android.huawei',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installAndroidHuawei->id,
+            'text' => 'Что-то не работает',
+            'next_screen_key' => 'install.android.problem',
+            'order' => 1,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installAndroidHuawei->id,
+            'text' => 'Другие устройства',
+            'next_screen_key' => 'install.main',
+            'order' => 2,
+        ]);
+
+        // Android - Problem (общий)
+        $installAndroidProblem = Screen::create([
+            'key' => 'install.android.problem',
+            'title' => 'Что-то не работает',
+            'text' => 'Текст о том, что здесь пользователь сможет найти ответы на распространенные проблемы + Выберите ваше устройство:',
+            'handler_id' => 'install.android.problem',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installAndroidProblem->id,
+            'text' => 'Выбрать проблему',
+            'next_screen_key' => 'faq.broken.android',
+            'order' => 1,
+        ]);
+
+        // --- iPhone/iPad ---
+        $installIphone = Screen::create([
+            'key' => 'install.iphone',
+            'title' => 'iPhone/iPad',
+            'text' => 'Выдача конфига + инструкция по установке / сформированная ссылка на автоматическое добавление конфига в программу',
+            'handler_id' => 'install.iphone',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installIphone->id,
+            'text' => 'У меня другие программы',
+            'next_screen_key' => 'install.iphone.other',
+            'order' => 1,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installIphone->id,
+            'text' => 'Что-то не работает',
+            'next_screen_key' => 'install.iphone.problem',
+            'order' => 2,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installIphone->id,
+            'text' => 'Другие устройства',
+            'next_screen_key' => 'install.main',
+            'order' => 3,
+        ]);
+
+        // iPhone - У меня другие программы
+        $installIphoneOther = Screen::create([
+            'key' => 'install.iphone.other',
+            'title' => 'У меня другие программы',
+            'text' => 'Инструкция по установке',
+            'handler_id' => 'install.iphone.other',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installIphoneOther->id,
+            'text' => 'Что-то не работает',
+            'next_screen_key' => 'install.iphone.other.problem',
+            'order' => 1,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installIphoneOther->id,
+            'text' => 'Другие устройства',
+            'next_screen_key' => 'install.main',
+            'order' => 2,
+        ]);
+
+        // iPhone - Other - Problem
+        $installIphoneOtherProblem = Screen::create([
+            'key' => 'install.iphone.other.problem',
+            'title' => 'Что-то не работает',
+            'text' => 'Текст о том, что здесь пользователь сможет найти ответы на распространенные проблемы + Выберите ваше устройство:',
+            'handler_id' => 'install.iphone.other.problem',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installIphoneOtherProblem->id,
+            'text' => 'Выбрать проблему',
+            'next_screen_key' => 'faq.broken.iphone',
+            'order' => 1,
+        ]);
+
+        // iPhone - Problem
+        $installIphoneProblem = Screen::create([
+            'key' => 'install.iphone.problem',
+            'title' => 'Что-то не работает',
+            'text' => 'Текст о том, что здесь пользователь сможет найти ответы на распространенные проблемы + Выберите ваше устройство:',
+            'handler_id' => 'install.iphone.problem',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installIphoneProblem->id,
+            'text' => 'Выбрать проблему',
+            'next_screen_key' => 'faq.broken.iphone',
+            'order' => 1,
+        ]);
+
+        // --- AndroidTV ---
+        $installAndroidtv = Screen::create([
+            'key' => 'install.androidtv',
+            'title' => 'AndroidTV',
+            'text' => 'Инструкция на установку',
+            'handler_id' => 'install.androidtv',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installAndroidtv->id,
+            'text' => 'Что-то не работает',
+            'next_screen_key' => 'install.androidtv.problem',
+            'order' => 1,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installAndroidtv->id,
+            'text' => 'Другие устройства',
+            'next_screen_key' => 'install.main',
+            'order' => 2,
+        ]);
+
+        // AndroidTV - Problem
+        $installAndroidtvProblem = Screen::create([
+            'key' => 'install.androidtv.problem',
+            'title' => 'Что-то не работает',
+            'text' => 'Текст о том, что здесь пользователь может найти ссылки на раздел устранения проблем + Выберите ваше устройство',
+            'handler_id' => 'install.androidtv.problem',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installAndroidtvProblem->id,
+            'text' => 'Что-то не работает',
+            'next_screen_key' => 'faq.broken.androidtv',
+            'order' => 1,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installAndroidtvProblem->id,
+            'text' => 'Другие устройства',
+            'next_screen_key' => 'install.main',
+            'order' => 2,
+        ]);
+
+        // --- AppleTV ---
+        $installAppletv = Screen::create([
+            'key' => 'install.appletv',
+            'title' => 'AppleTV',
+            'text' => 'Выдача конфига + Инструкция по установке / форматированная ссылка на автоматическое добавление конфига в программу',
+            'handler_id' => 'install.appletv',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installAppletv->id,
+            'text' => 'Что-то не работает',
+            'next_screen_key' => 'install.appletv.problem',
+            'order' => 1,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installAppletv->id,
+            'text' => 'Другие устройства',
+            'next_screen_key' => 'install.main',
+            'order' => 2,
+        ]);
+
+        // AppleTV - Problem
+        $installAppletvProblem = Screen::create([
+            'key' => 'install.appletv.problem',
+            'title' => 'Что-то не работает',
+            'text' => 'Текст о том, что здесь пользователь может найти ссылки на раздел устранения проблем + Выберите ваше устройство',
+            'handler_id' => 'install.appletv.problem',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installAppletvProblem->id,
+            'text' => 'Что-то не работает',
+            'next_screen_key' => 'faq.broken.appletv',
+            'order' => 1,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installAppletvProblem->id,
+            'text' => 'Другие устройства',
+            'next_screen_key' => 'install.main',
+            'order' => 2,
+        ]);
+
+        // --- Windows ---
+        $installWindows = Screen::create([
+            'key' => 'install.windows',
+            'title' => 'Windows',
+            'text' => 'Выдача конфига + Инструкция по установке / форматированная ссылка на автоматическое добавление конфига в программу',
+            'handler_id' => 'install.windows',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installWindows->id,
+            'text' => 'У меня другие программы',
+            'next_screen_key' => 'install.windows.other',
+            'order' => 1,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installWindows->id,
+            'text' => 'Что-то не работает',
+            'next_screen_key' => 'install.windows.problem',
+            'order' => 2,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installWindows->id,
+            'text' => 'Другие устройства',
+            'next_screen_key' => 'install.main',
+            'order' => 3,
+        ]);
+
+        // Windows - Other programs
+        $installWindowsOther = Screen::create([
+            'key' => 'install.windows.other',
+            'title' => 'У меня другие программы',
+            'text' => 'Инструкция на установку',
+            'handler_id' => 'install.windows.other',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installWindowsOther->id,
+            'text' => 'Что-то не работает',
+            'next_screen_key' => 'install.windows.other.problem',
+            'order' => 1,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installWindowsOther->id,
+            'text' => 'Другие устройства',
+            'next_screen_key' => 'install.main',
+            'order' => 2,
+        ]);
+
+        // Windows - Other - Problem
+        $installWindowsOtherProblem = Screen::create([
+            'key' => 'install.windows.other.problem',
+            'title' => 'Что-то не работает',
+            'text' => 'Текст о том, что здесь пользователь может найти ссылки на раздел устранения проблем + Выберите ваше устройство',
+            'handler_id' => 'install.windows.other.problem',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installWindowsOtherProblem->id,
+            'text' => 'Что-то не работает',
+            'next_screen_key' => 'faq.broken.windows',
+            'order' => 1,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installWindowsOtherProblem->id,
+            'text' => 'Другие устройства',
+            'next_screen_key' => 'install.main',
+            'order' => 2,
+        ]);
+
+        // Windows - Problem
+        $installWindowsProblem = Screen::create([
+            'key' => 'install.windows.problem',
+            'title' => 'Что-то не работает',
+            'text' => 'Текст о том, что здесь пользователь может найти ссылки на раздел устранения проблем + Выберите ваше устройство',
+            'handler_id' => 'install.windows.problem',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installWindowsProblem->id,
+            'text' => 'Что-то не работает',
+            'next_screen_key' => 'faq.broken.windows',
+            'order' => 1,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installWindowsProblem->id,
+            'text' => 'Другие устройства',
+            'next_screen_key' => 'install.main',
+            'order' => 2,
+        ]);
+
+        // --- Mac ---
+        $installMac = Screen::create([
+            'key' => 'install.mac',
+            'title' => 'Mac',
+            'text' => 'Выдача конфига + Инструкция по установке / форматированная ссылка на автоматическое добавление конфига в программу',
+            'handler_id' => 'install.mac',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installMac->id,
+            'text' => 'У меня другие программы',
+            'next_screen_key' => 'install.mac.other',
+            'order' => 1,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installMac->id,
+            'text' => 'Что-то не работает',
+            'next_screen_key' => 'install.mac.problem',
+            'order' => 2,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installMac->id,
+            'text' => 'Другие устройства',
+            'next_screen_key' => 'install.main',
+            'order' => 3,
+        ]);
+
+        // Mac - Other programs
+        $installMacOther = Screen::create([
+            'key' => 'install.mac.other',
+            'title' => 'У меня другие программы',
+            'text' => 'Инструкция на установку',
+            'handler_id' => 'install.mac.other',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installMacOther->id,
+            'text' => 'Что-то не работает',
+            'next_screen_key' => 'install.mac.other.problem',
+            'order' => 1,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installMacOther->id,
+            'text' => 'Другие устройства',
+            'next_screen_key' => 'install.main',
+            'order' => 2,
+        ]);
+
+        // Mac - Other - Problem
+        $installMacOtherProblem = Screen::create([
+            'key' => 'install.mac.other.problem',
+            'title' => 'Что-то не работает',
+            'text' => 'Текст о том, что здесь пользователь может найти ссылки на раздел устранения проблем + Выберите ваше устройство',
+            'handler_id' => 'install.mac.other.problem',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installMacOtherProblem->id,
+            'text' => 'Что-то не работает',
+            'next_screen_key' => 'faq.broken.mac',
+            'order' => 1,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installMacOtherProblem->id,
+            'text' => 'Другие устройства',
+            'next_screen_key' => 'install.main',
+            'order' => 2,
+        ]);
+
+        // Mac - Problem
+        $installMacProblem = Screen::create([
+            'key' => 'install.mac.problem',
+            'title' => 'Что-то не работает',
+            'text' => 'Текст о том, что здесь пользователь может найти ссылки на раздел устранения проблем + Выберите ваше устройство',
+            'handler_id' => 'install.mac.problem',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installMacProblem->id,
+            'text' => 'Что-то не работает',
+            'next_screen_key' => 'faq.broken.mac',
+            'order' => 1,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installMacProblem->id,
+            'text' => 'Другие устройства',
+            'next_screen_key' => 'install.main',
+            'order' => 2,
+        ]);
+
+        // =====================================================
+        // Ветка "Профиль"
+        // =====================================================
+
+        $profileMain = Screen::create([
+            'key' => 'profile.main',
+            'title' => 'Профиль',
+            'text' => 'Выберите интересующий вас раздел:',
+            'handler_id' => 'profile.main',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $profileMain->id,
+            'text' => 'Мой профиль',
+            'next_screen_key' => 'profile.my',
+            'order' => 1,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $profileMain->id,
+            'text' => 'Как подключить VPN на другом доп устройстве',
+            'next_screen_key' => 'profile.connect_device',
+            'order' => 2,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $profileMain->id,
+            'text' => 'Перенос тарифа на другую почту',
+            'next_screen_key' => 'profile.transfer',
+            'order' => 3,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $profileMain->id,
+            'text' => 'Удаление аккаунта',
+            'next_screen_key' => 'profile.delete',
+            'order' => 4,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $profileMain->id,
+            'text' => 'Доступное количество устройств на аккаунт',
+            'next_screen_key' => 'profile.devices_limit',
+            'order' => 5,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $profileMain->id,
+            'text' => 'Реферальная программа',
+            'next_screen_key' => 'profile.referral',
+            'order' => 6,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $profileMain->id,
+            'text' => 'Назад',
+            'next_screen_key' => 'main.menu',
+            'order' => 7,
+        ]);
+
+        // Мой профиль
+        $profileMy = Screen::create([
+            'key' => 'profile.my',
+            'title' => 'Мой профиль',
+            'text' => 'Вся основная инфа по привязанной почте',
+            'handler_id' => 'profile.my',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $profileMy->id,
+            'text' => 'Назад',
+            'next_screen_key' => 'profile.main',
+            'order' => 1,
+        ]);
+
+        // Как подключить VPN на другом устройстве
+        $profileConnectDevice = Screen::create([
+            'key' => 'profile.connect_device',
+            'title' => 'Как подключить VPN на другом устройстве',
+            'text' => 'Вся основная инфа по тому, как подключить VPN на другом устройстве',
+            'handler_id' => 'profile.connect_device',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $profileConnectDevice->id,
+            'text' => 'Назад',
+            'next_screen_key' => 'profile.main',
+            'order' => 1,
+        ]);
+
+        // Перенос тарифа на другую почту
+        $profileTransfer = Screen::create([
+            'key' => 'profile.transfer',
+            'title' => 'Перенос тарифа на другую почту',
+            'text' => 'Вся основная инфа по тому, как перенести тариф на другую почту + Контакты поддержки',
+            'handler_id' => 'profile.transfer',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $profileTransfer->id,
+            'text' => 'Написать в поддержку',
+            'next_screen_key' => 'faq.support',
+            'order' => 1,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $profileTransfer->id,
+            'text' => 'Назад',
+            'next_screen_key' => 'profile.main',
+            'order' => 2,
+        ]);
+
+        // Удаление аккаунта
+        $profileDelete = Screen::create([
+            'key' => 'profile.delete',
+            'title' => 'Удаление аккаунта',
+            'text' => 'Вся основная инфа по тому, как удалить аккаунт + Контакты поддержки',
+            'handler_id' => 'profile.delete',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $profileDelete->id,
+            'text' => 'Написать в поддержку',
+            'next_screen_key' => 'faq.support',
+            'order' => 1,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $profileDelete->id,
+            'text' => 'Назад',
+            'next_screen_key' => 'profile.main',
+            'order' => 2,
+        ]);
+
+        // Доступное количество устройств
+        $profileDevicesLimit = Screen::create([
+            'key' => 'profile.devices_limit',
+            'title' => 'Доступное количество устройств',
+            'text' => 'Вся основная инфа по этому вопросу',
+            'handler_id' => 'profile.devices_limit',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $profileDevicesLimit->id,
+            'text' => 'Назад',
+            'next_screen_key' => 'profile.main',
+            'order' => 1,
+        ]);
+
+        // Реферальная программа
+        $profileReferral = Screen::create([
+            'key' => 'profile.referral',
+            'title' => 'Реферальная программа',
+            'text' => 'Вся основная инфа по реферальной программе + как она работает в приложении на выходе и через конфиги/ключи (пока нет, в будущем м/б)',
+            'handler_id' => 'profile.referral',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $profileReferral->id,
+            'text' => 'Не начислились дни по реферальной программе',
+            'next_screen_key' => 'profile.referral.problem',
+            'order' => 1,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $profileReferral->id,
+            'text' => 'Назад',
+            'next_screen_key' => 'profile.main',
+            'order' => 2,
+        ]);
+
+        // Проблема с реферальной программой
+        $profileReferralProblem = Screen::create([
+            'key' => 'profile.referral.problem',
+            'title' => 'Не начислились дни',
+            'text' => 'Описание, что надо сделать в таком случае + Контакты поддержки',
+            'handler_id' => 'profile.referral.problem',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $profileReferralProblem->id,
+            'text' => 'Написать в тех поддержку',
+            'next_screen_key' => 'faq.support',
+            'order' => 1,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $profileReferralProblem->id,
+            'text' => 'Назад',
+            'next_screen_key' => 'profile.referral',
+            'order' => 2,
+        ]);
+
+        // =====================================================
+        // Ветка "Документация"
+        // =====================================================
+
+        $docsMain = Screen::create([
+            'key' => 'docs.main',
+            'title' => 'Документация',
+            'text' => 'Выберите документ:',
+            'handler_id' => 'docs.main',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $docsMain->id,
+            'text' => 'Политика конфиденциальности',
+            'next_screen_key' => 'docs.privacy',
+            'order' => 1,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $docsMain->id,
+            'text' => 'Пользовательское соглашение',
+            'next_screen_key' => 'docs.terms',
+            'order' => 2,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $docsMain->id,
+            'text' => 'Политика обработки персональных данных',
+            'next_screen_key' => 'docs.personal_data',
+            'order' => 3,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $docsMain->id,
+            'text' => 'Условия возврата',
+            'next_screen_key' => 'docs.refund',
+            'order' => 4,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $docsMain->id,
+            'text' => 'Назад',
+            'next_screen_key' => 'main.menu',
+            'order' => 5,
+        ]);
+
+        // Политика конфиденциальности
+        $docsPrivacy = Screen::create([
+            'key' => 'docs.privacy',
+            'title' => 'Политика конфиденциальности',
+            'text' => 'Текст политики конфиденциальности',
+            'handler_id' => 'docs.privacy',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $docsPrivacy->id,
+            'text' => 'Назад',
+            'next_screen_key' => 'docs.main',
+            'order' => 1,
+        ]);
+
+        // Пользовательское соглашение
+        $docsTerms = Screen::create([
+            'key' => 'docs.terms',
+            'title' => 'Пользовательское соглашение',
+            'text' => 'Текст пользовательского соглашения',
+            'handler_id' => 'docs.terms',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $docsTerms->id,
+            'text' => 'Назад',
+            'next_screen_key' => 'docs.main',
+            'order' => 1,
+        ]);
+
+        // Политика обработки персональных данных
+        $docsPersonalData = Screen::create([
+            'key' => 'docs.personal_data',
+            'title' => 'Политика обработки персональных данных',
+            'text' => 'Текст политики обработки персональных данных',
+            'handler_id' => 'docs.personal_data',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $docsPersonalData->id,
+            'text' => 'Назад',
+            'next_screen_key' => 'docs.main',
+            'order' => 1,
+        ]);
+
+        // Условия возврата
+        $docsRefund = Screen::create([
+            'key' => 'docs.refund',
+            'title' => 'Условия возврата',
+            'text' => 'Текст условий возврата',
+            'handler_id' => 'docs.refund',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $docsRefund->id,
+            'text' => 'Назад',
+            'next_screen_key' => 'docs.main',
+            'order' => 1,
         ]);
 
         $this->command->info('Screens seeded successfully!');
