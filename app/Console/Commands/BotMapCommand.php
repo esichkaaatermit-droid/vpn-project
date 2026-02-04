@@ -127,7 +127,7 @@ class BotMapCommand extends Command
     }
 
     /**
-     * Генерация Markdown с Mermaid диаграммой.
+     * Генерация Markdown с читаемым деревом.
      */
     protected function generateMarkdown(): string
     {
@@ -136,15 +136,12 @@ class BotMapCommand extends Command
         $totalButtons = $this->screens->sum(fn($s) => $s->buttons->count());
         $withHandlers = $this->screens->filter(fn($s) => $s->handler_id)->count();
         $brokenCount = count($this->brokenLinks);
+        $status = $brokenCount === 0 ? '✅' : '⚠️';
 
-        $md = "# 🤖 Карта сценария бота\n\n";
+        $md = "# Дерево экранов бота\n\n";
         $md .= "**Сгенерировано:** {$date}\n\n";
-        $md .= "| Метрика | Значение |\n";
-        $md .= "|---------|----------|\n";
-        $md .= "| Экранов | {$totalScreens} |\n";
-        $md .= "| Кнопок | {$totalButtons} |\n";
-        $md .= "| С обработчиками | {$withHandlers} |\n";
-        $md .= "| Битых ссылок | {$brokenCount} |\n\n";
+        $md .= "**Экранов:** {$totalScreens} | **Кнопок:** {$totalButtons} | **Битых ссылок:** {$brokenCount} {$status}\n\n";
+        $md .= "---\n\n";
 
         // Битые ссылки
         if (!empty($this->brokenLinks)) {
@@ -152,19 +149,113 @@ class BotMapCommand extends Command
             foreach ($this->brokenLinks as $link) {
                 $md .= "- `{$link['from']}` → [{$link['button']}] → ❌ `{$link['to']}`\n";
             }
-            $md .= "\n";
+            $md .= "\n---\n\n";
         }
 
-        // Mermaid диаграмма
-        $md .= "## 📊 Диаграмма связей\n\n";
-        $md .= "```mermaid\n";
-        $md .= $this->generateMermaidDiagram();
-        $md .= "```\n\n";
-
-        $md .= "---\n\n";
-        $md .= "📌 **Как открыть:** Скопируйте код диаграммы на [mermaid.live](https://mermaid.live) или откройте в редакторе с поддержкой Mermaid (VS Code, Obsidian, Notion, GitHub)";
+        // Дерево экранов
+        $md .= "## 🏠 Главное меню (main.menu)\n\n";
+        $md .= "```\n";
+        $md .= $this->generateTree();
+        $md .= "```\n";
 
         return $md;
+    }
+
+    /**
+     * Генерация читаемого дерева экранов.
+     */
+    protected function generateTree(): string
+    {
+        $tree = '';
+        $visited = [];
+        
+        // Иконки для секций
+        $icons = [
+            'install' => '📂',
+            'faq' => '❓',
+            'tariffs' => '💰',
+            'profile' => '👤',
+            'docs' => '📄',
+        ];
+
+        // Находим главное меню
+        $mainMenu = $this->screens->firstWhere('key', 'main.menu');
+        if (!$mainMenu) {
+            return "Главное меню (main.menu) не найдено\n";
+        }
+
+        // Получаем кнопки главного меню (это основные ветки)
+        $mainButtons = $mainMenu->buttons->sortBy('order');
+        $totalButtons = $mainButtons->count();
+        $index = 0;
+
+        $mainButtons = $mainButtons->filter(fn($b) => $b->next_screen_key);
+        $totalButtons = $mainButtons->count();
+        $index = 0;
+
+        foreach ($mainButtons as $button) {
+            $index++;
+            $isLast = ($index === $totalButtons);
+            $prefix = $isLast ? '└── ' : '├── ';
+            $childPrefix = $isLast ? '    ' : '│   ';
+
+            $screen = $this->screens->firstWhere('key', $button->next_screen_key);
+            if (!$screen) continue;
+
+            $section = $this->getSection($screen->key);
+            $icon = $icons[$section] ?? '📁';
+            
+            $tree .= "{$prefix}{$icon} {$button->text} ({$screen->key})\n";
+            $visited[$screen->key] = true;
+            
+            $tree .= $this->generateSubTree($screen, $childPrefix, $visited);
+        }
+
+        return $tree;
+    }
+
+    /**
+     * Рекурсивная генерация поддерева.
+     */
+    protected function generateSubTree($screen, string $prefix, array &$visited): string
+    {
+        $tree = '';
+        $buttons = $screen->buttons->sortBy('order')->filter(fn($b) => $b->next_screen_key);
+
+        $totalButtons = $buttons->count();
+        $index = 0;
+
+        foreach ($buttons as $button) {
+            $index++;
+            $isLast = ($index === $totalButtons);
+            $connector = $isLast ? '└── ' : '├── ';
+            $childPrefix = $prefix . ($isLast ? '    ' : '│   ');
+
+            $nextScreen = $this->screens->firstWhere('key', $button->next_screen_key);
+            
+            if (!$nextScreen) {
+                // Битая ссылка
+                $tree .= "{$prefix}{$connector}❌ {$button->text} ({$button->next_screen_key})\n";
+                continue;
+            }
+
+            // Проверяем циклы
+            if (isset($visited[$nextScreen->key])) {
+                $tree .= "{$prefix}{$connector}{$button->text} → {$nextScreen->key}\n";
+                continue;
+            }
+
+            $tree .= "{$prefix}{$connector}{$button->text} ({$nextScreen->key})\n";
+            $visited[$nextScreen->key] = true;
+
+            // Рекурсивно обрабатываем детей (но ограничиваем глубину)
+            $depth = substr_count($prefix, '│') + substr_count($prefix, '    ');
+            if ($depth < 8) {
+                $tree .= $this->generateSubTree($nextScreen, $childPrefix, $visited);
+            }
+        }
+
+        return $tree;
     }
 
     /**
@@ -403,13 +494,9 @@ HTML;
     protected function generateVisNetworkData(): string
     {
         $colors = [
-            'start' => '#f59e0b',
             'main' => '#f59e0b',
             'faq' => '#3b82f6',
             'tariffs' => '#f97316',
-            'account' => '#a855f7',
-            'support' => '#06b6d4',
-            'troubleshoot' => '#ef4444',
             'docs' => '#eab308',
             'install' => '#84cc16',
             'profile' => '#ec4899',
@@ -429,7 +516,7 @@ HTML;
             $level = $levels[$screen->key] ?? 0;
             
             // Главные узлы (уровень 0-1) делаем жёлтыми как в Figma
-            $isMainNode = in_array($screen->key, ['start', 'main.menu', 'faq.main', 'tariffs.main', 'account.main', 'support.main', 'troubleshoot.main', 'docs.main', 'install.main', 'profile.main']);
+            $isMainNode = in_array($screen->key, ['main.menu', 'faq.main', 'tariffs.main', 'docs.main', 'install.main', 'profile.main']);
             
             if ($isMainNode) {
                 $nodeColor = [
@@ -509,7 +596,7 @@ HTML;
         $queue = [];
         
         // Начинаем с корневых узлов
-        $rootKeys = ['start', 'main.menu'];
+        $rootKeys = ['main.menu'];
         foreach ($rootKeys as $root) {
             if ($this->allKeys->contains($root)) {
                 $queue[] = [$root, 0];
