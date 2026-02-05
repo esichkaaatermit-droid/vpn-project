@@ -33,9 +33,9 @@ class BotMapController extends Controller
             'screens_with_handlers' => $screens->filter(fn($s) => $s->hasHandler())->count(),
         ];
 
-        // Генерируем текстовое дерево
+        // Генерируем деревья для каждой секции
         $screensByKey = $screens->keyBy('key');
-        $tree = $this->generateTextTree($screensByKey);
+        $trees = $this->generateTreesPerSection($screensByKey);
 
         // Проверяем битые ссылки
         $brokenLinks = $this->findBrokenLinks($screens);
@@ -44,35 +44,60 @@ class BotMapController extends Controller
             'screens' => $screens,
             'sections' => $sections,
             'stats' => $stats,
-            'tree' => $tree,
+            'trees' => $trees,
             'brokenLinks' => $brokenLinks,
         ]);
     }
 
     /**
-     * Генерировать текстовое дерево структуры бота.
+     * Генерировать деревья для каждой секции бота.
      */
-    protected function generateTextTree($screensByKey): string
+    protected function generateTreesPerSection($screensByKey): array
+    {
+        $trees = [];
+        
+        // Главное меню + первый уровень кнопок
+        $trees['main'] = $this->generateSectionTree('main.menu', $screensByKey, 1);
+        
+        // Основные ветки
+        $mainBranches = [
+            'install' => 'install.main',
+            'faq' => 'faq.main',
+            'tariffs' => 'tariffs.main',
+            'profile' => 'profile.main',
+            'docs' => 'docs.main',
+        ];
+        
+        foreach ($mainBranches as $name => $startKey) {
+            $trees[$name] = $this->generateSectionTree($startKey, $screensByKey);
+        }
+        
+        return $trees;
+    }
+    
+    /**
+     * Генерировать дерево для конкретной секции.
+     */
+    protected function generateSectionTree(string $startKey, $screensByKey, int $maxDepth = 15): string
     {
         $lines = [];
         $visited = [];
-
-        // Начинаем с главного меню
-        $mainMenu = $screensByKey->get('main.menu');
-        if ($mainMenu) {
-            $this->buildTreeBranch($mainMenu, $screensByKey, $lines, '', true, $visited, 0);
+        
+        $startScreen = $screensByKey->get($startKey);
+        if ($startScreen) {
+            $this->buildTreeBranch($startScreen, $screensByKey, $lines, '', true, $visited, 0, $maxDepth);
         }
-
+        
         return implode("\n", $lines);
     }
 
     /**
      * Рекурсивно строить ветку дерева.
      */
-    protected function buildTreeBranch($screen, $screensByKey, &$lines, $prefix, $isLast, &$visited, $depth): void
+    protected function buildTreeBranch($screen, $screensByKey, &$lines, $prefix, $isLast, &$visited, $depth, $maxDepth = 15): void
     {
         // Ограничиваем глубину чтобы избежать бесконечной рекурсии
-        if ($depth > 10) {
+        if ($depth > $maxDepth) {
             return;
         }
 
@@ -130,7 +155,7 @@ class BotMapController extends Controller
                     } else {
                         // Рекурсивно показываем вложенный экран
                         $lines[] = $childPrefix . $buttonConnector . "🔘 {$buttonText} ↓";
-                        $this->buildTreeBranch($nextScreen, $screensByKey, $lines, $childPrefix . ($isLastButton ? '    ' : '│   '), true, $visited, $depth + 1);
+                        $this->buildTreeBranch($nextScreen, $screensByKey, $lines, $childPrefix . ($isLastButton ? '    ' : '│   '), true, $visited, $depth + 1, $maxDepth);
                     }
                 } else {
                     $lines[] = $childPrefix . $buttonConnector . "🔘 {$buttonText} → <span class=\"text-red-500\">❌ {$nextKey}</span>";

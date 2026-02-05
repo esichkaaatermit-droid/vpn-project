@@ -15,6 +15,14 @@
             white-space: pre;
         }
         .tree-view b { font-weight: 600; color: #1f2937; }
+        .tab-button { transition: all 0.2s; }
+        .tab-button.active { 
+            background: white; 
+            border-bottom: 3px solid #3b82f6; 
+            color: #3b82f6;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -59,21 +67,44 @@
             </div>
         @endif
 
-        <!-- Дерево структуры бота -->
+        <!-- Дерево структуры бота с вкладками -->
         <div class="mb-8">
             <h2 class="text-xl font-semibold text-gray-700 mb-4">🌳 Дерево структуры бота</h2>
-            <div class="bg-white rounded-lg shadow p-6 overflow-x-auto">
-                <div class="tree-view">{!! $tree !!}</div>
+            
+            <!-- Вкладки -->
+            <div class="bg-gray-200 rounded-t-lg p-1 flex flex-wrap gap-1">
+                <button onclick="switchTab('main')" class="tab-button active px-4 py-2 rounded font-medium text-sm">
+                    🏠 Главное меню
+                </button>
+                <button onclick="switchTab('install')" class="tab-button px-4 py-2 rounded font-medium text-sm">
+                    📲 Установка
+                </button>
+                <button onclick="switchTab('faq')" class="tab-button px-4 py-2 rounded font-medium text-sm">
+                    ❓ FAQ
+                </button>
+                <button onclick="switchTab('tariffs')" class="tab-button px-4 py-2 rounded font-medium text-sm">
+                    💰 Тарифы
+                </button>
+                <button onclick="switchTab('profile')" class="tab-button px-4 py-2 rounded font-medium text-sm">
+                    👤 Профиль
+                </button>
+                <button onclick="switchTab('docs')" class="tab-button px-4 py-2 rounded font-medium text-sm">
+                    📄 Документация
+                </button>
             </div>
+            
+            <!-- Контент вкладок -->
+            <div class="bg-white rounded-b-lg shadow">
+                @foreach(['main' => 'Главное меню', 'install' => 'Установка', 'faq' => 'FAQ', 'tariffs' => 'Тарифы', 'profile' => 'Профиль', 'docs' => 'Документация'] as $key => $name)
+                    <div id="tab-{{ $key }}" class="tab-content {{ $key === 'main' ? 'active' : '' }} p-6 overflow-x-auto">
+                        <div class="tree-view">{!! $trees[$key] ?? '' !!}</div>
+                    </div>
+                @endforeach
+            </div>
+            
             <p class="text-sm text-gray-500 mt-2">
-                💡 Иконки: 
-                🏠 Главное меню •
-                📲 Установка •
-                ❓ FAQ •
-                💰 Тарифы •
-                👤 Профиль •
-                📄 Документация •
-                🔘 Кнопка
+                💡 Навигация: Кликните на вкладку чтобы увидеть её структуру •
+                🔘 Кнопка → синяя ссылка означает возврат/цикл
             </p>
         </div>
 
@@ -186,5 +217,25 @@
             </div>
         </div>
     </div>
+
+    <script>
+        function switchTab(tabName) {
+            // Скрыть все вкладки
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Убрать активный класс у кнопок
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Показать выбранную вкладку
+            document.getElementById('tab-' + tabName).classList.add('active');
+            
+            // Активировать кнопку
+            event.target.classList.add('active');
+        }
+    </script>
 </body>
 </html>
