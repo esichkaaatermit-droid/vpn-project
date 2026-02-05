@@ -33,8 +33,9 @@ class BotMapController extends Controller
             'screens_with_handlers' => $screens->filter(fn($s) => $s->hasHandler())->count(),
         ];
 
-        // Генерируем Mermaid-диаграмму
-        $mermaid = $this->generateMermaidDiagram($screens);
+        // Генерируем текстовое дерево
+        $screensByKey = $screens->keyBy('key');
+        $tree = $this->generateTextTree($screensByKey);
 
         // Проверяем битые ссылки
         $brokenLinks = $this->findBrokenLinks($screens);
@@ -43,62 +44,119 @@ class BotMapController extends Controller
             'screens' => $screens,
             'sections' => $sections,
             'stats' => $stats,
-            'mermaid' => $mermaid,
+            'tree' => $tree,
             'brokenLinks' => $brokenLinks,
         ]);
     }
 
     /**
-     * Генерировать Mermaid-диаграмму связей.
+     * Генерировать текстовое дерево структуры бота.
      */
-    protected function generateMermaidDiagram($screens): string
+    protected function generateTextTree($screensByKey): string
     {
-        $lines = ['flowchart TD'];
-        $allKeys = $screens->pluck('key')->toArray();
+        $lines = [];
+        $visited = [];
 
-        // Стили для разных секций
-        $lines[] = '    classDef main fill:#10b981,color:#fff';
-        $lines[] = '    classDef install fill:#3b82f6,color:#fff';
-        $lines[] = '    classDef faq fill:#8b5cf6,color:#fff';
-        $lines[] = '    classDef tariffs fill:#f59e0b,color:#fff';
-        $lines[] = '    classDef profile fill:#ec4899,color:#fff';
-        $lines[] = '    classDef docs fill:#6b7280,color:#fff';
-        $lines[] = '';
-
-        foreach ($screens as $screen) {
-            $fromId = $this->sanitizeNodeId($screen->key);
-            $fromLabel = $screen->title ?: $screen->key;
-            
-            // Добавляем узел с меткой
-            $lines[] = "    {$fromId}[\"{$fromLabel}\"]";
-            
-            foreach ($screen->buttons as $button) {
-                if ($button->next_screen_key && in_array($button->next_screen_key, $allKeys)) {
-                    $toId = $this->sanitizeNodeId($button->next_screen_key);
-                    $lines[] = "    {$fromId} --> {$toId}";
-                }
-            }
-        }
-
-        // Применяем стили
-        $lines[] = '';
-        foreach ($screens as $screen) {
-            $nodeId = $this->sanitizeNodeId($screen->key);
-            $section = $screen->getSection() ?? 'other';
-            if (in_array($section, ['main', 'install', 'faq', 'tariffs', 'profile', 'docs'])) {
-                $lines[] = "    class {$nodeId} {$section}";
-            }
+        // Начинаем с главного меню
+        $mainMenu = $screensByKey->get('main.menu');
+        if ($mainMenu) {
+            $this->buildTreeBranch($mainMenu, $screensByKey, $lines, '', true, $visited, 0);
         }
 
         return implode("\n", $lines);
     }
 
     /**
-     * Преобразовать ключ в валидный ID для Mermaid.
+     * Рекурсивно строить ветку дерева.
      */
-    protected function sanitizeNodeId(string $key): string
+    protected function buildTreeBranch($screen, $screensByKey, &$lines, $prefix, $isLast, &$visited, $depth): void
     {
-        return str_replace(['.', '-', ' '], '_', $key);
+        // Ограничиваем глубину чтобы избежать бесконечной рекурсии
+        if ($depth > 10) {
+            return;
+        }
+
+        $key = $screen->key;
+        
+        // Проверяем, посещали ли мы этот экран на текущем пути
+        if (isset($visited[$key]) && $visited[$key] > 2) {
+            $connector = $isLast ? '└── ' : '├── ';
+            $lines[] = $prefix . $connector . "↩️ {$key} (цикл)";
+            return;
+        }
+        $visited[$key] = ($visited[$key] ?? 0) + 1;
+
+        // Определяем символы для дерева
+        $connector = $isLast ? '└── ' : '├── ';
+        $childPrefix = $prefix . ($isLast ? '    ' : '│   ');
+
+        // Иконка секции
+        $icon = $this->getSectionIcon($screen->getSection());
+        
+        // Название экрана
+        $title = $screen->title ?: $key;
+        $lines[] = $prefix . $connector . "{$icon} <b>{$title}</b> <span class=\"text-gray-400\">({$key})</span>";
+        
+        // Текст экрана (укороченный)
+        if ($screen->text) {
+            $shortText = mb_substr($screen->text, 0, 60);
+            if (mb_strlen($screen->text) > 60) $shortText .= '...';
+            $shortText = str_replace("\n", " ", $shortText);
+            $lines[] = $childPrefix . "<span class=\"text-gray-500 text-sm\">\"{$shortText}\"</span>";
+        }
+
+        // Кнопки
+        $buttons = $screen->buttons;
+        $buttonCount = $buttons->count();
+        
+        foreach ($buttons as $index => $button) {
+            $isLastButton = ($index === $buttonCount - 1);
+            $buttonConnector = $isLastButton ? '└── ' : '├── ';
+            
+            $buttonText = $button->text;
+            $nextKey = $button->next_screen_key;
+            
+            if ($nextKey) {
+                $nextScreen = $screensByKey->get($nextKey);
+                
+                if ($nextScreen) {
+                    // Если это "Назад" или ведёт на уже посещённый экран - просто показываем ссылку
+                    $isBack = stripos($buttonText, 'назад') !== false || 
+                              stripos($buttonText, 'главное меню') !== false ||
+                              stripos($buttonText, 'другие устройства') !== false;
+                    
+                    if ($isBack || (isset($visited[$nextKey]) && $visited[$nextKey] > 0)) {
+                        $lines[] = $childPrefix . $buttonConnector . "🔘 {$buttonText} → <span class=\"text-blue-500\">{$nextKey}</span>";
+                    } else {
+                        // Рекурсивно показываем вложенный экран
+                        $lines[] = $childPrefix . $buttonConnector . "🔘 {$buttonText} ↓";
+                        $this->buildTreeBranch($nextScreen, $screensByKey, $lines, $childPrefix . ($isLastButton ? '    ' : '│   '), true, $visited, $depth + 1);
+                    }
+                } else {
+                    $lines[] = $childPrefix . $buttonConnector . "🔘 {$buttonText} → <span class=\"text-red-500\">❌ {$nextKey}</span>";
+                }
+            } else {
+                $lines[] = $childPrefix . $buttonConnector . "🔘 {$buttonText}";
+            }
+        }
+
+        $visited[$key]--;
+    }
+
+    /**
+     * Получить иконку для секции.
+     */
+    protected function getSectionIcon(?string $section): string
+    {
+        return match($section) {
+            'main' => '🏠',
+            'install' => '📲',
+            'faq' => '❓',
+            'tariffs' => '💰',
+            'profile' => '👤',
+            'docs' => '📄',
+            default => '📁',
+        };
     }
 
     /**

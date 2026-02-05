@@ -5,12 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Карта сценария бота</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
     <style>
         .screen-card { transition: all 0.2s; }
         .screen-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-        .mermaid { background: white; border-radius: 8px; padding: 20px; overflow-x: auto; }
-        .mermaid svg { max-width: none !important; }
+        .tree-view { 
+            font-family: 'Courier New', monospace; 
+            font-size: 14px; 
+            line-height: 1.6;
+            white-space: pre;
+        }
+        .tree-view b { font-weight: 600; color: #1f2937; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -55,22 +59,21 @@
             </div>
         @endif
 
-        <!-- Дерево связей (Mermaid) -->
+        <!-- Дерево структуры бота -->
         <div class="mb-8">
-            <h2 class="text-xl font-semibold text-gray-700 mb-4">🌳 Дерево связей</h2>
-            <div class="bg-white rounded-lg shadow p-4 overflow-x-auto">
-                <pre class="mermaid">
-{{ $mermaid }}
-                </pre>
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">🌳 Дерево структуры бота</h2>
+            <div class="bg-white rounded-lg shadow p-6 overflow-x-auto">
+                <div class="tree-view">{!! $tree !!}</div>
             </div>
             <p class="text-sm text-gray-500 mt-2">
-                💡 Цвета: 
-                <span class="inline-block w-3 h-3 rounded bg-green-500"></span> Главное меню
-                <span class="inline-block w-3 h-3 rounded bg-blue-500 ml-2"></span> Установка
-                <span class="inline-block w-3 h-3 rounded bg-purple-500 ml-2"></span> FAQ
-                <span class="inline-block w-3 h-3 rounded bg-yellow-500 ml-2"></span> Тарифы
-                <span class="inline-block w-3 h-3 rounded bg-pink-500 ml-2"></span> Профиль
-                <span class="inline-block w-3 h-3 rounded bg-gray-500 ml-2"></span> Документация
+                💡 Иконки: 
+                🏠 Главное меню •
+                📲 Установка •
+                ❓ FAQ •
+                💰 Тарифы •
+                👤 Профиль •
+                📄 Документация •
+                🔘 Кнопка
             </p>
         </div>
 
@@ -183,18 +186,5 @@
             </div>
         </div>
     </div>
-
-    <script>
-        mermaid.initialize({ 
-            startOnLoad: true,
-            theme: 'default',
-            flowchart: {
-                useMaxWidth: false,
-                htmlLabels: true,
-                curve: 'basis'
-            },
-            securityLevel: 'loose'
-        });
-    </script>
 </body>
 </html>
