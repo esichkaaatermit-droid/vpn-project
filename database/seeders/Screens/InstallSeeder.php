@@ -167,12 +167,19 @@ class InstallSeeder extends Seeder
             'order' => 2,
         ]);
 
-        // Android - Huawei/Realme/APK (конечная точка - БЕЗ кнопок)
-        Screen::create([
+        // Android - Huawei/Realme/APK
+        $installAndroidHuawei = Screen::create([
             'key' => 'install.android.huawei',
             'title' => 'У меня хуавей/реалми/апк приложения',
             'text' => 'Инструкция по установке для хуавей/реалми/апк',
             'handler_id' => 'install.android.huawei',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installAndroidHuawei->id,
+            'text' => 'Назад',
+            'next_screen_key' => 'install.android.instructions',
+            'order' => 1,
         ]);
 
         // Android - Problem

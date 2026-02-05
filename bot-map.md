@@ -1,8 +1,8 @@
 # Дерево экранов бота
 
-**Сгенерировано:** 05.02.2026 17:14:02
+**Сгенерировано:** 05.02.2026 17:23:34
 
-**Экранов:** 101 | **Кнопок:** 225 | **Битых ссылок:** 0 ✅
+**Экранов:** 101 | **Кнопок:** 227 | **Битых ссылок:** 0 ✅
 
 ---
 
@@ -18,6 +18,7 @@
 │   │       │   │   └── Назад → install.android.config
 │   │       │   └── Другие устройства → install.main
 │   │       ├── У меня хуавей/реалми/апк приложения (install.android.huawei)
+│   │       │   └── Назад → install.android.instructions
 │   │       ├── Что-то не работает (install.android.problem)
 │   │       │   └── Выбрать проблему → faq.broken.android
 │   │       └── Другие устройства → install.main
@@ -195,7 +196,8 @@
 │   │   │   └── Назад → tariffs.start_plan
 │   │   └── Назад → tariffs.main
 │   ├── Оплата тарифа (tariffs.payment)
-│   │   └── Оплатить тариф → tariffs.pay.process
+│   │   ├── Оплатить тариф → tariffs.pay.process
+│   │   └── Назад → tariffs.main
 │   ├── Отмена подписки и возврат средств (tariffs.cancel_refund)
 │   │   ├── Отменить подписку (tariffs.unsubscribe)
 │   │   │   └── Назад → tariffs.cancel_refund

@@ -293,6 +293,13 @@ class TariffsSeeder extends Seeder
             'order' => 1,
         ]);
 
+        ScreenButton::create([
+            'screen_id' => $tariffsPayment->id,
+            'text' => 'Назад',
+            'next_screen_key' => 'tariffs.main',
+            'order' => 2,
+        ]);
+
         // Экран процесса оплаты (ожидание, через 15 минут если не оплачен → переход на tariffs.pay.failed)
         $tariffsPayProcess = Screen::create([
             'key' => 'tariffs.pay.process',
