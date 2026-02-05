@@ -1,6 +1,6 @@
 # VPN Telegram Bot
 
-Telegram-бот для VPN сервиса на Laravel 11.
+Telegram-бот для VPN сервиса на Laravel 12.
 
 ## Настройка
 
