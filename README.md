@@ -204,6 +204,10 @@ app/
 │       ├── MainMenuHandler.php      # Главное меню
 │       ├── ProfileHandler.php       # Профиль
 │       └── TariffHandler.php        # Тарифы
+├── Console/Commands/
+│   ├── DataMigrateCommand.php       # Команда data:migrate
+│   ├── MakeDataMigrationCommand.php # Команда make:data-migration
+│   └── TelegramSetWebhook.php       # Команда telegram:set-webhook
 ├── Http/Controllers/
 │   ├── Admin/
 │   │   └── BotMapController.php     # HTML-карта
@@ -221,15 +225,20 @@ app/
 │   │   └── ConfigService.php        # Заглушка API конфигов
 │   └── Telegram/
 │       └── BotService.php           # Основной сервис бота
+├── DataMigrations/
+│   └── DataMigration.php            # Базовый класс миграций данных
 config/
 └── telegram.php                     # Конфигурация бота
 database/
 ├── migrations/
 │   ├── *_create_screens_table.php
 │   ├── *_create_screen_buttons_table.php
-│   └── *_create_user_states_table.php
+│   ├── *_create_user_states_table.php
+│   └── *_create_data_migrations_table.php
+├── data_migrations/                 # Миграции данных бота
+│   └── *_example_update_welcome_text.php
 └── seeders/
-    └── ScreensSeeder.php            # Заполнение экранов
+    └── ScreensSeeder.php            # Начальное заполнение экранов
 ```
 
 ---
@@ -248,7 +257,104 @@ php artisan migrate
 
 # Заполнить экраны
 php artisan db:seed --class=ScreensSeeder
+
+# Миграции данных (см. ниже)
+php artisan data:migrate
+php artisan data:migrate --status
+php artisan data:migrate --rollback
 ```
+
+---
+
+## Миграции данных
+
+Для изменения структуры бота в продакшене (без потери пользователей) используйте **миграции данных**.
+
+### Создание миграции
+
+```bash
+php artisan make:data-migration update_main_menu_text
+```
+
+Файл создаётся в `database/data_migrations/`.
+
+### Пример миграции
+
+```php
+<?php
+
+use App\DataMigrations\DataMigration;
+
+return new class extends DataMigration
+{
+    public function description(): string
+    {
+        return 'Обновление текста главного меню';
+    }
+
+    public function up(): void
+    {
+        // Обновить текст экрана
+        $this->updateScreenText('main.menu', 'Новый текст приветствия');
+        
+        // Обновить текст кнопки
+        $this->updateButtonText('main.menu', 'Старый текст', 'Новый текст');
+        
+        // Добавить новый экран
+        $this->upsertScreen('new.screen', [
+            'title' => 'Новый экран',
+            'text' => 'Текст экрана',
+            'handler_id' => 'new.screen',
+        ]);
+        
+        // Добавить кнопку
+        $this->upsertButton('main.menu', 'Новая кнопка', [
+            'next_screen_key' => 'new.screen',
+            'order' => 6,
+        ]);
+    }
+
+    public function down(): void
+    {
+        $this->deleteScreen('new.screen');
+        $this->deleteButton('main.menu', 'Новая кнопка');
+    }
+};
+```
+
+### Доступные методы
+
+| Метод | Описание |
+|-------|----------|
+| `updateScreenText($key, $text)` | Обновить текст экрана |
+| `updateButtonText($screenKey, $oldText, $newText)` | Обновить текст кнопки |
+| `upsertScreen($key, $data)` | Создать/обновить экран |
+| `upsertButton($screenKey, $text, $data)` | Создать/обновить кнопку |
+| `deleteScreen($key)` | Удалить экран и его кнопки |
+| `deleteButton($screenKey, $text)` | Удалить кнопку |
+
+### Запуск миграций
+
+```bash
+# Показать статус
+php artisan data:migrate --status
+
+# Запустить все ожидающие миграции
+php artisan data:migrate
+
+# Откатить последнюю миграцию
+php artisan data:migrate --rollback
+
+# Откатить несколько миграций
+php artisan data:migrate --rollback --step=3
+```
+
+### Когда использовать
+
+| Сценарий | Что делать |
+|----------|------------|
+| Разработка (нет пользователей) | `migrate:fresh --seed` |
+| Продакшен (есть пользователи) | `data:migrate` |
 
 ---
 
