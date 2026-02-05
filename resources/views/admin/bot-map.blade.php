@@ -5,9 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Карта сценария бота</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
     <style>
         .screen-card { transition: all 0.2s; }
         .screen-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .mermaid { background: white; border-radius: 8px; padding: 20px; overflow-x: auto; }
+        .mermaid svg { max-width: none !important; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
@@ -32,6 +35,43 @@
                 <div class="text-2xl font-bold text-purple-600">{{ $stats['screens_with_handlers'] }}</div>
                 <div class="text-gray-600">С обработчиками</div>
             </div>
+        </div>
+
+        <!-- Валидация связей -->
+        @if(count($brokenLinks) > 0)
+            <div class="bg-red-50 border border-red-400 text-red-700 p-4 mb-8 rounded-lg">
+                <div class="font-bold mb-2">⚠️ Найдены битые ссылки ({{ count($brokenLinks) }}):</div>
+                @foreach($brokenLinks as $link)
+                    <div class="text-sm ml-4">
+                        <span class="font-mono">{{ $link['screen'] }}</span> → 
+                        "{{ $link['button'] }}" → 
+                        <span class="font-mono text-red-600">❌ {{ $link['missing'] }}</span>
+                    </div>
+                @endforeach
+            </div>
+        @else
+            <div class="bg-green-50 border border-green-400 text-green-700 p-4 mb-8 rounded-lg">
+                ✓ Все связи в порядке — битых ссылок нет
+            </div>
+        @endif
+
+        <!-- Дерево связей (Mermaid) -->
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">🌳 Дерево связей</h2>
+            <div class="bg-white rounded-lg shadow p-4 overflow-x-auto">
+                <pre class="mermaid">
+{{ $mermaid }}
+                </pre>
+            </div>
+            <p class="text-sm text-gray-500 mt-2">
+                💡 Цвета: 
+                <span class="inline-block w-3 h-3 rounded bg-green-500"></span> Главное меню
+                <span class="inline-block w-3 h-3 rounded bg-blue-500 ml-2"></span> Установка
+                <span class="inline-block w-3 h-3 rounded bg-purple-500 ml-2"></span> FAQ
+                <span class="inline-block w-3 h-3 rounded bg-yellow-500 ml-2"></span> Тарифы
+                <span class="inline-block w-3 h-3 rounded bg-pink-500 ml-2"></span> Профиль
+                <span class="inline-block w-3 h-3 rounded bg-gray-500 ml-2"></span> Документация
+            </p>
         </div>
 
         <!-- Экраны по секциям -->
@@ -143,5 +183,18 @@
             </div>
         </div>
     </div>
+
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+                useMaxWidth: false,
+                htmlLabels: true,
+                curve: 'basis'
+            },
+            securityLevel: 'loose'
+        });
+    </script>
 </body>
 </html>
