@@ -224,6 +224,7 @@ class BotMapCommand extends Command
 
         $totalButtons = $buttons->count();
         $index = 0;
+        $currentSection = $this->getSection($screen->key);
 
         foreach ($buttons as $button) {
             $index++;
@@ -239,8 +240,16 @@ class BotMapCommand extends Command
                 continue;
             }
 
+            $nextSection = $this->getSection($nextScreen->key);
+
             // Проверяем циклы
             if (isset($visited[$nextScreen->key])) {
+                $tree .= "{$prefix}{$connector}{$button->text} → {$nextScreen->key}\n";
+                continue;
+            }
+
+            // Проверяем межсекционный переход (переход в другую ветку)
+            if ($this->isCrossSectionLink($currentSection, $nextSection, $button->text)) {
                 $tree .= "{$prefix}{$connector}{$button->text} → {$nextScreen->key}\n";
                 continue;
             }
@@ -256,6 +265,15 @@ class BotMapCommand extends Command
         }
 
         return $tree;
+    }
+
+    /**
+     * Проверяет, является ли переход межсекционным (из одной ветки в другую).
+     */
+    protected function isCrossSectionLink(string $fromSection, string $toSection, string $buttonText): bool
+    {
+        // Если переход в другую секцию - это межсекционная ссылка
+        return $fromSection !== $toSection;
     }
 
     /**

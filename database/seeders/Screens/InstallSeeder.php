@@ -13,6 +13,7 @@ class InstallSeeder extends Seeder
      */
     public function run(): void
     {
+        // Корневой экран
         $installMain = Screen::create([
             'key' => 'install.main',
             'title' => 'Установить Easy Light',
@@ -69,37 +70,54 @@ class InstallSeeder extends Seeder
             'order' => 7,
         ]);
 
-        // --- Android ---
+        // ============================================
+        // ANDROID
+        // ============================================
         $installAndroid = Screen::create([
             'key' => 'install.android',
             'title' => 'Android',
-            'text' => 'Инструкция по установке',
+            'text' => 'Выберите способ установки:',
             'handler_id' => 'install.android',
         ]);
 
         ScreenButton::create([
             'screen_id' => $installAndroid->id,
+            'text' => 'Инструкции по установке',
+            'next_screen_key' => 'install.android.instructions',
+            'order' => 1,
+        ]);
+
+        // Android - Инструкции по установке
+        $installAndroidInstructions = Screen::create([
+            'key' => 'install.android.instructions',
+            'title' => 'Инструкции по установке',
+            'text' => 'Выберите вариант установки:',
+            'handler_id' => 'install.android.instructions',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installAndroidInstructions->id,
             'text' => 'Я использую конфиги на Android',
             'next_screen_key' => 'install.android.config',
             'order' => 1,
         ]);
 
         ScreenButton::create([
-            'screen_id' => $installAndroid->id,
+            'screen_id' => $installAndroidInstructions->id,
             'text' => 'У меня хуавей/реалми/апк приложения',
             'next_screen_key' => 'install.android.huawei',
             'order' => 2,
         ]);
 
         ScreenButton::create([
-            'screen_id' => $installAndroid->id,
+            'screen_id' => $installAndroidInstructions->id,
             'text' => 'Что-то не работает',
             'next_screen_key' => 'install.android.problem',
             'order' => 3,
         ]);
 
         ScreenButton::create([
-            'screen_id' => $installAndroid->id,
+            'screen_id' => $installAndroidInstructions->id,
             'text' => 'Другие устройства',
             'next_screen_key' => 'install.main',
             'order' => 4,
@@ -137,34 +155,27 @@ class InstallSeeder extends Seeder
 
         ScreenButton::create([
             'screen_id' => $installAndroidConfigProblem->id,
-            'text' => 'Выбрать проблему',
-            'next_screen_key' => 'faq.broken.android',
+            'text' => 'Другие устройства',
+            'next_screen_key' => 'install.main',
             'order' => 1,
         ]);
 
-        // Android - Huawei/Realme/APK
-        $installAndroidHuawei = Screen::create([
+        ScreenButton::create([
+            'screen_id' => $installAndroidConfigProblem->id,
+            'text' => 'Назад',
+            'next_screen_key' => 'install.android.config',
+            'order' => 2,
+        ]);
+
+        // Android - Huawei/Realme/APK (конечная точка - БЕЗ кнопок)
+        Screen::create([
             'key' => 'install.android.huawei',
             'title' => 'У меня хуавей/реалми/апк приложения',
             'text' => 'Инструкция по установке для хуавей/реалми/апк',
             'handler_id' => 'install.android.huawei',
         ]);
 
-        ScreenButton::create([
-            'screen_id' => $installAndroidHuawei->id,
-            'text' => 'Что-то не работает',
-            'next_screen_key' => 'install.android.problem',
-            'order' => 1,
-        ]);
-
-        ScreenButton::create([
-            'screen_id' => $installAndroidHuawei->id,
-            'text' => 'Другие устройства',
-            'next_screen_key' => 'install.main',
-            'order' => 2,
-        ]);
-
-        // Android - Problem (общий)
+        // Android - Problem
         $installAndroidProblem = Screen::create([
             'key' => 'install.android.problem',
             'title' => 'Что-то не работает',
@@ -179,7 +190,9 @@ class InstallSeeder extends Seeder
             'order' => 1,
         ]);
 
-        // --- iPhone/iPad ---
+        // ============================================
+        // IPHONE/IPAD
+        // ============================================
         $installIphone = Screen::create([
             'key' => 'install.iphone',
             'title' => 'iPhone/iPad',
@@ -189,7 +202,7 @@ class InstallSeeder extends Seeder
 
         ScreenButton::create([
             'screen_id' => $installIphone->id,
-            'text' => 'У меня другие программы',
+            'text' => 'У меня другая программа',
             'next_screen_key' => 'install.iphone.other',
             'order' => 1,
         ]);
@@ -208,23 +221,38 @@ class InstallSeeder extends Seeder
             'order' => 3,
         ]);
 
-        // iPhone - У меня другие программы
+        // iPhone - У меня другая программа
         $installIphoneOther = Screen::create([
             'key' => 'install.iphone.other',
-            'title' => 'У меня другие программы',
-            'text' => 'Инструкция по установке',
+            'title' => 'У меня другая программа',
+            'text' => 'Выберите вариант:',
             'handler_id' => 'install.iphone.other',
         ]);
 
         ScreenButton::create([
             'screen_id' => $installIphoneOther->id,
+            'text' => 'Инструкции по установке',
+            'next_screen_key' => 'install.iphone.other.instructions',
+            'order' => 1,
+        ]);
+
+        // iPhone - Other - Instructions
+        $installIphoneOtherInstructions = Screen::create([
+            'key' => 'install.iphone.other.instructions',
+            'title' => 'Инструкции по установке',
+            'text' => 'Инструкция по установке',
+            'handler_id' => 'install.iphone.other.instructions',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installIphoneOtherInstructions->id,
             'text' => 'Что-то не работает',
             'next_screen_key' => 'install.iphone.other.problem',
             'order' => 1,
         ]);
 
         ScreenButton::create([
-            'screen_id' => $installIphoneOther->id,
+            'screen_id' => $installIphoneOtherInstructions->id,
             'text' => 'Другие устройства',
             'next_screen_key' => 'install.main',
             'order' => 2,
@@ -260,105 +288,149 @@ class InstallSeeder extends Seeder
             'order' => 1,
         ]);
 
-        // --- AndroidTV ---
+        // ============================================
+        // ANDROIDTV
+        // ============================================
         $installAndroidtv = Screen::create([
             'key' => 'install.androidtv',
             'title' => 'AndroidTV',
-            'text' => 'Инструкция на установку',
+            'text' => 'Выберите действие:',
             'handler_id' => 'install.androidtv',
         ]);
 
         ScreenButton::create([
             'screen_id' => $installAndroidtv->id,
-            'text' => 'Что-то не работает',
-            'next_screen_key' => 'install.androidtv.problem',
+            'text' => 'Инструкции по установке',
+            'next_screen_key' => 'install.androidtv.instructions',
             'order' => 1,
         ]);
 
+        // AndroidTV - Instructions (конечная точка)
+        $installAndroidtvInstructions = Screen::create([
+            'key' => 'install.androidtv.instructions',
+            'title' => 'Инструкции по установке',
+            'text' => 'Инструкция на установку',
+            'handler_id' => 'install.androidtv.instructions',
+        ]);
+
         ScreenButton::create([
-            'screen_id' => $installAndroidtv->id,
+            'screen_id' => $installAndroidtvInstructions->id,
             'text' => 'Другие устройства',
             'next_screen_key' => 'install.main',
-            'order' => 2,
-        ]);
-
-        // AndroidTV - Problem
-        $installAndroidtvProblem = Screen::create([
-            'key' => 'install.androidtv.problem',
-            'title' => 'Что-то не работает',
-            'text' => 'Текст о том, что здесь пользователь может найти ссылки на раздел устранения проблем + Выберите ваше устройство',
-            'handler_id' => 'install.androidtv.problem',
-        ]);
-
-        ScreenButton::create([
-            'screen_id' => $installAndroidtvProblem->id,
-            'text' => 'Что-то не работает',
-            'next_screen_key' => 'faq.broken.androidtv',
             'order' => 1,
         ]);
 
-        ScreenButton::create([
-            'screen_id' => $installAndroidtvProblem->id,
-            'text' => 'Другие устройства',
-            'next_screen_key' => 'install.main',
-            'order' => 2,
-        ]);
-
-        // --- AppleTV ---
+        // ============================================
+        // APPLETV
+        // ============================================
         $installAppletv = Screen::create([
             'key' => 'install.appletv',
             'title' => 'AppleTV',
-            'text' => 'Выдача конфига + Инструкция по установке / форматированная ссылка на автоматическое добавление конфига в программу',
+            'text' => 'Выдача конфига + инструкция по установке / сформированная ссылка на автоматическое добавление конфига в программу',
             'handler_id' => 'install.appletv',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installAppletv->id,
+            'text' => 'У меня другая программа',
+            'next_screen_key' => 'install.appletv.other',
+            'order' => 1,
         ]);
 
         ScreenButton::create([
             'screen_id' => $installAppletv->id,
             'text' => 'Что-то не работает',
             'next_screen_key' => 'install.appletv.problem',
-            'order' => 1,
+            'order' => 2,
         ]);
 
         ScreenButton::create([
             'screen_id' => $installAppletv->id,
             'text' => 'Другие устройства',
             'next_screen_key' => 'install.main',
+            'order' => 3,
+        ]);
+
+        // AppleTV - У меня другая программа
+        $installAppletvOther = Screen::create([
+            'key' => 'install.appletv.other',
+            'title' => 'У меня другая программа',
+            'text' => 'Выберите вариант:',
+            'handler_id' => 'install.appletv.other',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installAppletvOther->id,
+            'text' => 'Инструкции по установке',
+            'next_screen_key' => 'install.appletv.other.instructions',
+            'order' => 1,
+        ]);
+
+        // AppleTV - Other - Instructions
+        $installAppletvOtherInstructions = Screen::create([
+            'key' => 'install.appletv.other.instructions',
+            'title' => 'Инструкции по установке',
+            'text' => 'Инструкция по установке',
+            'handler_id' => 'install.appletv.other.instructions',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installAppletvOtherInstructions->id,
+            'text' => 'Что-то не работает',
+            'next_screen_key' => 'install.appletv.other.problem',
+            'order' => 1,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installAppletvOtherInstructions->id,
+            'text' => 'Другие устройства',
+            'next_screen_key' => 'install.main',
             'order' => 2,
+        ]);
+
+        // AppleTV - Other - Problem
+        $installAppletvOtherProblem = Screen::create([
+            'key' => 'install.appletv.other.problem',
+            'title' => 'Что-то не работает',
+            'text' => 'Текст о том, что здесь пользователь сможет найти ответы на распространенные проблемы + Выберите ваше устройство:',
+            'handler_id' => 'install.appletv.other.problem',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installAppletvOtherProblem->id,
+            'text' => 'Выбрать проблему',
+            'next_screen_key' => 'faq.broken.appletv',
+            'order' => 1,
         ]);
 
         // AppleTV - Problem
         $installAppletvProblem = Screen::create([
             'key' => 'install.appletv.problem',
             'title' => 'Что-то не работает',
-            'text' => 'Текст о том, что здесь пользователь может найти ссылки на раздел устранения проблем + Выберите ваше устройство',
+            'text' => 'Текст о том, что здесь пользователь сможет найти ответы на распространенные проблемы + Выберите ваше устройство:',
             'handler_id' => 'install.appletv.problem',
         ]);
 
         ScreenButton::create([
             'screen_id' => $installAppletvProblem->id,
-            'text' => 'Что-то не работает',
+            'text' => 'Выбрать проблему',
             'next_screen_key' => 'faq.broken.appletv',
             'order' => 1,
         ]);
 
-        ScreenButton::create([
-            'screen_id' => $installAppletvProblem->id,
-            'text' => 'Другие устройства',
-            'next_screen_key' => 'install.main',
-            'order' => 2,
-        ]);
-
-        // --- Windows ---
+        // ============================================
+        // WINDOWS
+        // ============================================
         $installWindows = Screen::create([
             'key' => 'install.windows',
             'title' => 'Windows',
-            'text' => 'Выдача конфига + Инструкция по установке / форматированная ссылка на автоматическое добавление конфига в программу',
+            'text' => 'Выдача конфига + инструкция по установке / сформированная ссылка на автоматическое добавление конфига в программу',
             'handler_id' => 'install.windows',
         ]);
 
         ScreenButton::create([
             'screen_id' => $installWindows->id,
-            'text' => 'У меня другие программы',
+            'text' => 'У меня другая программа',
             'next_screen_key' => 'install.windows.other',
             'order' => 1,
         ]);
@@ -377,23 +449,38 @@ class InstallSeeder extends Seeder
             'order' => 3,
         ]);
 
-        // Windows - Other programs
+        // Windows - У меня другая программа
         $installWindowsOther = Screen::create([
             'key' => 'install.windows.other',
-            'title' => 'У меня другие программы',
-            'text' => 'Инструкция на установку',
+            'title' => 'У меня другая программа',
+            'text' => 'Выберите вариант:',
             'handler_id' => 'install.windows.other',
         ]);
 
         ScreenButton::create([
             'screen_id' => $installWindowsOther->id,
+            'text' => 'Инструкции по установке',
+            'next_screen_key' => 'install.windows.other.instructions',
+            'order' => 1,
+        ]);
+
+        // Windows - Other - Instructions
+        $installWindowsOtherInstructions = Screen::create([
+            'key' => 'install.windows.other.instructions',
+            'title' => 'Инструкции по установке',
+            'text' => 'Инструкция на установку',
+            'handler_id' => 'install.windows.other.instructions',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installWindowsOtherInstructions->id,
             'text' => 'Что-то не работает',
             'next_screen_key' => 'install.windows.other.problem',
             'order' => 1,
         ]);
 
         ScreenButton::create([
-            'screen_id' => $installWindowsOther->id,
+            'screen_id' => $installWindowsOtherInstructions->id,
             'text' => 'Другие устройства',
             'next_screen_key' => 'install.main',
             'order' => 2,
@@ -409,16 +496,9 @@ class InstallSeeder extends Seeder
 
         ScreenButton::create([
             'screen_id' => $installWindowsOtherProblem->id,
-            'text' => 'Что-то не работает',
+            'text' => 'Выбрать проблему',
             'next_screen_key' => 'faq.broken.windows',
             'order' => 1,
-        ]);
-
-        ScreenButton::create([
-            'screen_id' => $installWindowsOtherProblem->id,
-            'text' => 'Другие устройства',
-            'next_screen_key' => 'install.main',
-            'order' => 2,
         ]);
 
         // Windows - Problem
@@ -431,29 +511,24 @@ class InstallSeeder extends Seeder
 
         ScreenButton::create([
             'screen_id' => $installWindowsProblem->id,
-            'text' => 'Что-то не работает',
+            'text' => 'Выбрать проблему',
             'next_screen_key' => 'faq.broken.windows',
             'order' => 1,
         ]);
 
-        ScreenButton::create([
-            'screen_id' => $installWindowsProblem->id,
-            'text' => 'Другие устройства',
-            'next_screen_key' => 'install.main',
-            'order' => 2,
-        ]);
-
-        // --- Mac ---
+        // ============================================
+        // MAC
+        // ============================================
         $installMac = Screen::create([
             'key' => 'install.mac',
             'title' => 'Mac',
-            'text' => 'Выдача конфига + Инструкция по установке / форматированная ссылка на автоматическое добавление конфига в программу',
+            'text' => 'Выдача конфига + инструкция по установке / сформированная ссылка на автоматическое добавление конфига в программу',
             'handler_id' => 'install.mac',
         ]);
 
         ScreenButton::create([
             'screen_id' => $installMac->id,
-            'text' => 'У меня другие программы',
+            'text' => 'У меня другая программа',
             'next_screen_key' => 'install.mac.other',
             'order' => 1,
         ]);
@@ -472,23 +547,38 @@ class InstallSeeder extends Seeder
             'order' => 3,
         ]);
 
-        // Mac - Other programs
+        // Mac - У меня другая программа
         $installMacOther = Screen::create([
             'key' => 'install.mac.other',
-            'title' => 'У меня другие программы',
-            'text' => 'Инструкция на установку',
+            'title' => 'У меня другая программа',
+            'text' => 'Выберите вариант:',
             'handler_id' => 'install.mac.other',
         ]);
 
         ScreenButton::create([
             'screen_id' => $installMacOther->id,
+            'text' => 'Инструкции по установке',
+            'next_screen_key' => 'install.mac.other.instructions',
+            'order' => 1,
+        ]);
+
+        // Mac - Other - Instructions
+        $installMacOtherInstructions = Screen::create([
+            'key' => 'install.mac.other.instructions',
+            'title' => 'Инструкции по установке',
+            'text' => 'Инструкция на установку',
+            'handler_id' => 'install.mac.other.instructions',
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installMacOtherInstructions->id,
             'text' => 'Что-то не работает',
             'next_screen_key' => 'install.mac.other.problem',
             'order' => 1,
         ]);
 
         ScreenButton::create([
-            'screen_id' => $installMacOther->id,
+            'screen_id' => $installMacOtherInstructions->id,
             'text' => 'Другие устройства',
             'next_screen_key' => 'install.main',
             'order' => 2,
@@ -504,16 +594,9 @@ class InstallSeeder extends Seeder
 
         ScreenButton::create([
             'screen_id' => $installMacOtherProblem->id,
-            'text' => 'Что-то не работает',
+            'text' => 'Выбрать проблему',
             'next_screen_key' => 'faq.broken.mac',
             'order' => 1,
-        ]);
-
-        ScreenButton::create([
-            'screen_id' => $installMacOtherProblem->id,
-            'text' => 'Другие устройства',
-            'next_screen_key' => 'install.main',
-            'order' => 2,
         ]);
 
         // Mac - Problem
@@ -526,16 +609,9 @@ class InstallSeeder extends Seeder
 
         ScreenButton::create([
             'screen_id' => $installMacProblem->id,
-            'text' => 'Что-то не работает',
+            'text' => 'Выбрать проблему',
             'next_screen_key' => 'faq.broken.mac',
             'order' => 1,
-        ]);
-
-        ScreenButton::create([
-            'screen_id' => $installMacProblem->id,
-            'text' => 'Другие устройства',
-            'next_screen_key' => 'install.main',
-            'order' => 2,
         ]);
     }
 }

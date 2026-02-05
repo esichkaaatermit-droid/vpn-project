@@ -8,13 +8,86 @@
     <style>
         .screen-card { transition: all 0.2s; }
         .screen-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        
+        /* Новые стили для сворачиваемого дерева */
         .tree-view { 
-            font-family: 'Courier New', monospace; 
-            font-size: 14px; 
-            line-height: 1.6;
-            white-space: pre;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace; 
+            font-size: 13px; 
+            line-height: 1.5;
         }
         .tree-view b { font-weight: 600; color: #1f2937; }
+        
+        .tree-screen {
+            border-left: 2px solid #e5e7eb;
+            padding-left: 12px;
+            margin-left: 8px;
+            margin-bottom: 4px;
+        }
+        .tree-screen:hover {
+            border-left-color: #3b82f6;
+        }
+        .tree-header {
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: #f8fafc;
+            margin-bottom: 2px;
+        }
+        .tree-buttons {
+            margin-left: 16px;
+        }
+        .tree-button {
+            padding: 2px 6px;
+            margin: 2px 0;
+        }
+        .tree-item {
+            padding: 2px 6px;
+        }
+        .tree-details {
+            margin: 2px 0;
+        }
+        .tree-details > summary {
+            padding: 2px 6px;
+            list-style: none;
+        }
+        .tree-details > summary::-webkit-details-marker {
+            display: none;
+        }
+        .tree-details > summary::before {
+            content: '▶ ';
+            font-size: 10px;
+            color: #9ca3af;
+            transition: transform 0.2s;
+            display: inline-block;
+        }
+        .tree-details[open] > summary::before {
+            transform: rotate(90deg);
+        }
+        .tree-children {
+            margin-left: 16px;
+            border-left: 1px dashed #d1d5db;
+            padding-left: 8px;
+        }
+        
+        /* Кнопки управления */
+        .tree-controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .tree-controls button {
+            padding: 6px 12px;
+            font-size: 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tree-controls button:hover {
+            background: #f3f4f6;
+            border-color: #d1d5db;
+        }
+        
         .tab-button { transition: all 0.2s; }
         .tab-button.active { 
             background: white; 
@@ -97,14 +170,20 @@
             <div class="bg-white rounded-b-lg shadow">
                 @foreach(['main' => 'Главное меню', 'install' => 'Установка', 'faq' => 'FAQ', 'tariffs' => 'Тарифы', 'profile' => 'Профиль', 'docs' => 'Документация'] as $key => $name)
                     <div id="tab-{{ $key }}" class="tab-content {{ $key === 'main' ? 'active' : '' }} p-6 overflow-x-auto">
+                        <div class="tree-controls">
+                            <button onclick="expandAll('tab-{{ $key }}')">📂 Развернуть всё</button>
+                            <button onclick="collapseAll('tab-{{ $key }}')">📁 Свернуть всё</button>
+                            <button onclick="collapseToLevel('tab-{{ $key }}', 1)">1️⃣ Только 1 уровень</button>
+                            <button onclick="collapseToLevel('tab-{{ $key }}', 2)">2️⃣ 2 уровня</button>
+                        </div>
                         <div class="tree-view">{!! $trees[$key] ?? '' !!}</div>
                     </div>
                 @endforeach
             </div>
             
             <p class="text-sm text-gray-500 mt-2">
-                💡 Навигация: Кликните на вкладку чтобы увидеть её структуру •
-                🔘 Кнопка → синяя ссылка означает возврат/цикл
+                💡 Кликните на ▶ чтобы свернуть/развернуть ветку •
+                🔘 Синяя ссылка = переход в другую секцию или назад
             </p>
         </div>
 
@@ -236,6 +315,43 @@
             // Активировать кнопку
             event.target.classList.add('active');
         }
+        
+        // Развернуть все секции
+        function expandAll(tabId) {
+            const tab = document.getElementById(tabId);
+            tab.querySelectorAll('details').forEach(d => d.open = true);
+        }
+        
+        // Свернуть все секции
+        function collapseAll(tabId) {
+            const tab = document.getElementById(tabId);
+            tab.querySelectorAll('details').forEach(d => d.open = false);
+        }
+        
+        // Свернуть до определённого уровня
+        function collapseToLevel(tabId, level) {
+            const tab = document.getElementById(tabId);
+            
+            tab.querySelectorAll('details').forEach(d => {
+                // Считаем уровень вложенности
+                let depth = 0;
+                let parent = d.parentElement;
+                while (parent && parent.id !== tabId) {
+                    if (parent.classList.contains('tree-children')) {
+                        depth++;
+                    }
+                    parent = parent.parentElement;
+                }
+                
+                // Открываем если глубина меньше уровня
+                d.open = depth < level;
+            });
+        }
+        
+        // По умолчанию сворачиваем до 2 уровней для FAQ
+        document.addEventListener('DOMContentLoaded', function() {
+            collapseToLevel('tab-faq', 2);
+        });
     </script>
 </body>
 </html>

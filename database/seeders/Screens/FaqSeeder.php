@@ -116,16 +116,9 @@ class FaqSeeder extends Seeder
 
         ScreenButton::create([
             'screen_id' => $faqTariffsQ1->id,
-            'text' => 'Назад к вопросам',
+            'text' => 'Назад',
             'next_screen_key' => 'faq.tariffs',
             'order' => 1,
-        ]);
-
-        ScreenButton::create([
-            'screen_id' => $faqTariffsQ1->id,
-            'text' => 'В главное меню',
-            'next_screen_key' => 'main.menu',
-            'order' => 2,
         ]);
 
         $faqTariffsQ2 = Screen::create([
@@ -137,16 +130,9 @@ class FaqSeeder extends Seeder
 
         ScreenButton::create([
             'screen_id' => $faqTariffsQ2->id,
-            'text' => 'Назад к вопросам',
+            'text' => 'Назад',
             'next_screen_key' => 'faq.tariffs',
             'order' => 1,
-        ]);
-
-        ScreenButton::create([
-            'screen_id' => $faqTariffsQ2->id,
-            'text' => 'В главное меню',
-            'next_screen_key' => 'main.menu',
-            'order' => 2,
         ]);
 
         $faqTariffsQ3 = Screen::create([
@@ -158,16 +144,9 @@ class FaqSeeder extends Seeder
 
         ScreenButton::create([
             'screen_id' => $faqTariffsQ3->id,
-            'text' => 'Назад к вопросам',
+            'text' => 'Назад',
             'next_screen_key' => 'faq.tariffs',
             'order' => 1,
-        ]);
-
-        ScreenButton::create([
-            'screen_id' => $faqTariffsQ3->id,
-            'text' => 'В главное меню',
-            'next_screen_key' => 'main.menu',
-            'order' => 2,
         ]);
 
         $faqTariffsQ4 = Screen::create([
@@ -179,16 +158,9 @@ class FaqSeeder extends Seeder
 
         ScreenButton::create([
             'screen_id' => $faqTariffsQ4->id,
-            'text' => 'Назад к вопросам',
+            'text' => 'Назад',
             'next_screen_key' => 'faq.tariffs',
             'order' => 1,
-        ]);
-
-        ScreenButton::create([
-            'screen_id' => $faqTariffsQ4->id,
-            'text' => 'В главное меню',
-            'next_screen_key' => 'main.menu',
-            'order' => 2,
         ]);
 
         // Экран 3 — "Отменить подписку"

@@ -80,65 +80,55 @@ class BotMapController extends Controller
      */
     protected function generateSectionTree(string $startKey, $screensByKey, int $maxDepth = 15): string
     {
-        $lines = [];
         $visited = [];
         
         $startScreen = $screensByKey->get($startKey);
         if ($startScreen) {
-            $this->buildTreeBranch($startScreen, $screensByKey, $lines, '', true, $visited, 0, $maxDepth);
+            return $this->buildTreeBranch($startScreen, $screensByKey, $visited, 0, $maxDepth);
         }
         
-        return implode("\n", $lines);
+        return '';
     }
 
     /**
-     * Рекурсивно строить ветку дерева.
+     * Рекурсивно строить ветку дерева (HTML с поддержкой сворачивания).
      */
-    protected function buildTreeBranch($screen, $screensByKey, &$lines, $prefix, $isLast, &$visited, $depth, $maxDepth = 15): void
+    protected function buildTreeBranch($screen, $screensByKey, &$visited, $depth, $maxDepth = 15): string
     {
         // Ограничиваем глубину чтобы избежать бесконечной рекурсии
         if ($depth > $maxDepth) {
-            return;
+            return '';
         }
 
         $key = $screen->key;
         
         // Проверяем, посещали ли мы этот экран на текущем пути
         if (isset($visited[$key]) && $visited[$key] > 2) {
-            $connector = $isLast ? '└── ' : '├── ';
-            $lines[] = $prefix . $connector . "↩️ {$key} (цикл)";
-            return;
+            return "<div class=\"tree-item\"><span class=\"text-gray-400\">↩️ {$key} (цикл)</span></div>";
         }
         $visited[$key] = ($visited[$key] ?? 0) + 1;
-
-        // Определяем символы для дерева
-        $connector = $isLast ? '└── ' : '├── ';
-        $childPrefix = $prefix . ($isLast ? '    ' : '│   ');
 
         // Иконка секции
         $icon = $this->getSectionIcon($screen->getSection());
         
         // Название экрана
-        $title = $screen->title ?: $key;
-        $lines[] = $prefix . $connector . "{$icon} <b>{$title}</b> <span class=\"text-gray-400\">({$key})</span>";
+        $title = e($screen->title ?: $key);
         
         // Текст экрана (укороченный)
+        $textHtml = '';
         if ($screen->text) {
             $shortText = mb_substr($screen->text, 0, 60);
             if (mb_strlen($screen->text) > 60) $shortText .= '...';
-            $shortText = str_replace("\n", " ", $shortText);
-            $lines[] = $childPrefix . "<span class=\"text-gray-500 text-sm\">\"{$shortText}\"</span>";
+            $shortText = e(str_replace("\n", " ", $shortText));
+            $textHtml = "<div class=\"text-gray-500 text-sm ml-6\">\"{$shortText}\"</div>";
         }
 
-        // Кнопки
+        // Собираем кнопки
         $buttons = $screen->buttons;
-        $buttonCount = $buttons->count();
+        $buttonsHtml = '';
         
-        foreach ($buttons as $index => $button) {
-            $isLastButton = ($index === $buttonCount - 1);
-            $buttonConnector = $isLastButton ? '└── ' : '├── ';
-            
-            $buttonText = $button->text;
+        foreach ($buttons as $button) {
+            $buttonText = e($button->text);
             $nextKey = $button->next_screen_key;
             
             if ($nextKey) {
@@ -146,26 +136,39 @@ class BotMapController extends Controller
                 
                 if ($nextScreen) {
                     // Если это "Назад" или ведёт на уже посещённый экран - просто показываем ссылку
-                    $isBack = stripos($buttonText, 'назад') !== false || 
-                              stripos($buttonText, 'главное меню') !== false ||
-                              stripos($buttonText, 'другие устройства') !== false;
+                    $isBack = stripos($button->text, 'назад') !== false || 
+                              stripos($button->text, 'главное меню') !== false ||
+                              stripos($button->text, 'другие устройства') !== false;
                     
-                    if ($isBack || (isset($visited[$nextKey]) && $visited[$nextKey] > 0)) {
-                        $lines[] = $childPrefix . $buttonConnector . "🔘 {$buttonText} → <span class=\"text-blue-500\">{$nextKey}</span>";
+                    // Проверяем межсекционный переход (из одной ветки в другую)
+                    $currentSection = $screen->getSection();
+                    $nextSection = $nextScreen->getSection();
+                    $isCrossSection = $currentSection !== $nextSection;
+                    
+                    if ($isBack || $isCrossSection || (isset($visited[$nextKey]) && $visited[$nextKey] > 0)) {
+                        $buttonsHtml .= "<div class=\"tree-item tree-button\">🔘 {$buttonText} → <span class=\"text-blue-500\">{$nextKey}</span></div>";
                     } else {
                         // Рекурсивно показываем вложенный экран
-                        $lines[] = $childPrefix . $buttonConnector . "🔘 {$buttonText} ↓";
-                        $this->buildTreeBranch($nextScreen, $screensByKey, $lines, $childPrefix . ($isLastButton ? '    ' : '│   '), true, $visited, $depth + 1, $maxDepth);
+                        $childHtml = $this->buildTreeBranch($nextScreen, $screensByKey, $visited, $depth + 1, $maxDepth);
+                        $buttonsHtml .= "<details class=\"tree-details\" open><summary class=\"tree-button cursor-pointer hover:bg-gray-100 rounded\">🔘 {$buttonText} ↓</summary><div class=\"tree-children\">{$childHtml}</div></details>";
                     }
                 } else {
-                    $lines[] = $childPrefix . $buttonConnector . "🔘 {$buttonText} → <span class=\"text-red-500\">❌ {$nextKey}</span>";
+                    $buttonsHtml .= "<div class=\"tree-item tree-button\">🔘 {$buttonText} → <span class=\"text-red-500\">❌ {$nextKey}</span></div>";
                 }
             } else {
-                $lines[] = $childPrefix . $buttonConnector . "🔘 {$buttonText}";
+                $buttonsHtml .= "<div class=\"tree-item tree-button\">🔘 {$buttonText}</div>";
             }
         }
 
         $visited[$key]--;
+        
+        $html = "<div class=\"tree-screen\" data-key=\"{$key}\">";
+        $html .= "<div class=\"tree-header\">{$icon} <b>{$title}</b> <span class=\"text-gray-400\">({$key})</span></div>";
+        $html .= $textHtml;
+        $html .= "<div class=\"tree-buttons\">{$buttonsHtml}</div>";
+        $html .= "</div>";
+        
+        return $html;
     }
 
     /**
