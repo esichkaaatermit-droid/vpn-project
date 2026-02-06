@@ -90,6 +90,7 @@ class BotService
     protected function handleCallbackQuery(array $callbackQuery): void
     {
         $chatId = $callbackQuery['message']['chat']['id'];
+        $messageId = $callbackQuery['message']['message_id'];
         $data = $callbackQuery['data'] ?? '';
 
         // Отвечаем на callback
@@ -98,16 +99,21 @@ class BotService
         // Получаем состояние
         $userState = UserState::findOrCreateByChatId($chatId);
 
-        // Показываем экран по ключу
+        // Показываем экран по ключу (редактируем текущее сообщение)
         if ($data) {
-            $this->showScreen($chatId, $data, $userState);
+            $this->showScreen($chatId, $data, $userState, $messageId);
         }
     }
 
     /**
      * Показать экран пользователю.
+     * 
+     * @param int $chatId ID чата
+     * @param string $screenKey Ключ экрана
+     * @param UserState|null $userState Состояние пользователя
+     * @param int|null $messageId ID сообщения для редактирования (если null — отправляется новое)
      */
-    public function showScreen(int $chatId, string $screenKey, ?UserState $userState = null): bool
+    public function showScreen(int $chatId, string $screenKey, ?UserState $userState = null, ?int $messageId = null): bool
     {
         $screen = Screen::findByKey($screenKey);
 
@@ -151,18 +157,29 @@ class BotService
             $buttons = $this->buildButtonsFromScreen($screen);
         }
 
-        // Отправляем контент в зависимости от типа
+        // Если есть медиа — отправляем новое сообщение (редактировать нельзя)
         if ($document) {
-            // Отправляем документ с подписью и кнопками
+            // Удаляем старое сообщение если было
+            if ($messageId) {
+                $this->deleteMessage($chatId, $messageId);
+            }
             return $this->sendDocument($chatId, $document, $text, $buttons);
         }
         
         if ($photo) {
-            // Отправляем фото с подписью и кнопками
+            // Удаляем старое сообщение если было
+            if ($messageId) {
+                $this->deleteMessage($chatId, $messageId);
+            }
             return $this->sendPhoto($chatId, $photo, $text, $buttons);
         }
 
-        // Отправляем текстовое сообщение
+        // Если есть messageId — редактируем существующее сообщение
+        if ($messageId) {
+            return $this->editMessage($chatId, $messageId, $text, $buttons);
+        }
+
+        // Иначе отправляем новое сообщение
         return $this->sendMessage($chatId, $text, $buttons);
     }
 
@@ -177,10 +194,84 @@ class BotService
             $buttons[] = [
                 'text' => $button->text,
                 'callback_data' => $button->next_screen_key ?? 'noop',
+                'row' => $button->row ?? 0,
             ];
         }
         
         return $buttons;
+    }
+
+    /**
+     * Редактировать существующее сообщение.
+     * 
+     * @param int $chatId ID чата
+     * @param int $messageId ID сообщения для редактирования
+     * @param string $text Новый текст сообщения
+     * @param array $buttons Массив кнопок [['text' => '...', 'callback_data' => '...']]
+     */
+    public function editMessage(int $chatId, int $messageId, string $text, array $buttons = []): bool
+    {
+        $params = [
+            'chat_id' => $chatId,
+            'message_id' => $messageId,
+            'text' => $text,
+            'parse_mode' => 'HTML',
+        ];
+
+        // Формируем inline keyboard
+        $this->attachInlineKeyboard($params, $buttons);
+
+        try {
+            $response = Http::post("{$this->apiUrl}/editMessageText", $params);
+            
+            if (!$response->successful()) {
+                $error = $response->json();
+                
+                // Если сообщение не изменилось — это не ошибка
+                if (str_contains($error['description'] ?? '', 'message is not modified')) {
+                    return true;
+                }
+                
+                Log::error('Telegram editMessage error', [
+                    'response' => $error,
+                    'params' => array_diff_key($params, ['reply_markup' => 1]),
+                ]);
+                
+                // Fallback: отправляем новое сообщение
+                return $this->sendMessage($chatId, $text, $buttons);
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Telegram editMessage exception', [
+                'message' => $e->getMessage(),
+            ]);
+            // Fallback: отправляем новое сообщение
+            return $this->sendMessage($chatId, $text, $buttons);
+        }
+    }
+
+    /**
+     * Удалить сообщение.
+     * 
+     * @param int $chatId ID чата
+     * @param int $messageId ID сообщения для удаления
+     */
+    public function deleteMessage(int $chatId, int $messageId): bool
+    {
+        try {
+            $response = Http::post("{$this->apiUrl}/deleteMessage", [
+                'chat_id' => $chatId,
+                'message_id' => $messageId,
+            ]);
+            
+            return $response->successful();
+        } catch (\Exception $e) {
+            Log::error('Telegram deleteMessage exception', [
+                'message' => $e->getMessage(),
+            ]);
+            return false;
+        }
     }
 
     /**
@@ -319,7 +410,12 @@ class BotService
      * Добавить inline keyboard к параметрам запроса.
      *
      * @param array &$params Параметры запроса (модифицируются по ссылке)
-     * @param array $buttons Массив кнопок [['text' => '...', 'callback_data' => '...']]
+     * @param array $buttons Массив кнопок [['text' => '...', 'callback_data' => '...', 'row' => int]]
+     * 
+     * Логика row:
+     * - Кнопки с одинаковым row объединяются в один ряд
+     * - row=0 означает "свой отдельный ряд" (не группируется)
+     * - Порядок рядов определяется порядком кнопок (по order)
      */
     protected function attachInlineKeyboard(array &$params, array $buttons): void
     {
@@ -328,13 +424,30 @@ class BotService
         }
 
         $keyboard = [];
-        foreach ($buttons as $button) {
-            $keyboard[] = [
-                [
-                    'text' => $button['text'],
-                    'callback_data' => $button['callback_data'] ?? 'noop',
-                ]
+        $rowIndex = 0;
+        $usedRows = [];  // Запоминаем какие row уже обработаны
+        
+        foreach ($buttons as $index => $button) {
+            $rowNum = $button['row'] ?? 0;
+            $buttonData = [
+                'text' => $button['text'],
+                'callback_data' => $button['callback_data'] ?? 'noop',
             ];
+            
+            if ($rowNum === 0) {
+                // row = 0 — отдельный ряд для этой кнопки
+                $keyboard[] = [$buttonData];
+            } else {
+                // Проверяем, был ли уже этот row
+                if (isset($usedRows[$rowNum])) {
+                    // Добавляем в существующий ряд
+                    $keyboard[$usedRows[$rowNum]][] = $buttonData;
+                } else {
+                    // Создаём новый ряд
+                    $keyboard[] = [$buttonData];
+                    $usedRows[$rowNum] = count($keyboard) - 1;
+                }
+            }
         }
 
         $params['reply_markup'] = json_encode([

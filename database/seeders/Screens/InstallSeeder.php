@@ -23,51 +23,58 @@ class InstallSeeder extends Seeder
 
         ScreenButton::create([
             'screen_id' => $installMain->id,
-            'text' => 'Android',
+            'text' => '📱 Android',
             'next_screen_key' => 'install.android',
             'order' => 1,
+            'row' => 1,
         ]);
 
         ScreenButton::create([
             'screen_id' => $installMain->id,
-            'text' => 'iPhone/iPad',
+            'text' => '🍎 iPhone/iPad',
             'next_screen_key' => 'install.iphone',
             'order' => 2,
+            'row' => 1,
         ]);
 
         ScreenButton::create([
             'screen_id' => $installMain->id,
-            'text' => 'AndroidTV',
+            'text' => '📺 AndroidTV',
             'next_screen_key' => 'install.androidtv',
             'order' => 3,
+            'row' => 2,
         ]);
 
         ScreenButton::create([
             'screen_id' => $installMain->id,
-            'text' => 'AppleTV',
+            'text' => '📺 AppleTV',
             'next_screen_key' => 'install.appletv',
             'order' => 4,
+            'row' => 2,
         ]);
 
         ScreenButton::create([
             'screen_id' => $installMain->id,
-            'text' => 'Windows',
+            'text' => '💻 Windows',
             'next_screen_key' => 'install.windows',
             'order' => 5,
+            'row' => 3,
         ]);
 
         ScreenButton::create([
             'screen_id' => $installMain->id,
-            'text' => 'Mac',
+            'text' => '🖥 Mac',
             'next_screen_key' => 'install.mac',
             'order' => 6,
+            'row' => 3,
         ]);
 
         ScreenButton::create([
             'screen_id' => $installMain->id,
-            'text' => 'Назад',
+            'text' => '⬅️ Назад',
             'next_screen_key' => 'main.menu',
             'order' => 7,
+            'row' => 0,
         ]);
 
         // ============================================
@@ -82,9 +89,10 @@ class InstallSeeder extends Seeder
 
         ScreenButton::create([
             'screen_id' => $installAndroid->id,
-            'text' => 'Инструкции по установке',
+            'text' => '📖 Инструкции по установке',
             'next_screen_key' => 'install.android.instructions',
             'order' => 1,
+            'row' => 0,
         ]);
 
         // Android - Инструкции по установке

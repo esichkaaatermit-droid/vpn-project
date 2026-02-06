@@ -22,37 +22,42 @@ class MainMenuSeeder extends Seeder
 
         ScreenButton::create([
             'screen_id' => $mainMenu->id,
-            'text' => 'Установить Easy Light',
+            'text' => '📲 Установить Easy Light',
             'next_screen_key' => 'install.main',
             'order' => 1,
+            'row' => 0,
         ]);
 
         ScreenButton::create([
             'screen_id' => $mainMenu->id,
-            'text' => 'Вопросы и ответы',
+            'text' => '❓ Вопросы и ответы',
             'next_screen_key' => 'faq.main',
             'order' => 2,
+            'row' => 1,
         ]);
 
         ScreenButton::create([
             'screen_id' => $mainMenu->id,
-            'text' => 'Тарифы',
+            'text' => '💳 Тарифы',
             'next_screen_key' => 'tariffs.main',
             'order' => 3,
+            'row' => 1,
         ]);
 
         ScreenButton::create([
             'screen_id' => $mainMenu->id,
-            'text' => 'Профиль',
+            'text' => '👤 Профиль',
             'next_screen_key' => 'profile.main',
             'order' => 4,
+            'row' => 2,
         ]);
 
         ScreenButton::create([
             'screen_id' => $mainMenu->id,
-            'text' => 'Документация',
+            'text' => '📚 Документация',
             'next_screen_key' => 'docs.main',
             'order' => 5,
+            'row' => 2,
         ]);
     }
 }

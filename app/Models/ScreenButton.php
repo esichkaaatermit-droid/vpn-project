@@ -17,6 +17,7 @@ class ScreenButton extends Model
         'text',
         'next_screen_key',
         'order',
+        'row',
     ];
 
     /**
