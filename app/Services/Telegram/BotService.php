@@ -199,20 +199,7 @@ class BotService
         ];
 
         // Формируем inline keyboard
-        if (!empty($buttons)) {
-            $keyboard = [];
-            foreach ($buttons as $button) {
-                $keyboard[] = [
-                    [
-                        'text' => $button['text'],
-                        'callback_data' => $button['callback_data'] ?? 'noop',
-                    ]
-                ];
-            }
-            $params['reply_markup'] = json_encode([
-                'inline_keyboard' => $keyboard,
-            ]);
-        }
+        $this->attachInlineKeyboard($params, $buttons);
 
         try {
             $response = Http::post("{$this->apiUrl}/sendMessage", $params);
@@ -255,20 +242,7 @@ class BotService
         }
 
         // Формируем inline keyboard
-        if (!empty($buttons)) {
-            $keyboard = [];
-            foreach ($buttons as $button) {
-                $keyboard[] = [
-                    [
-                        'text' => $button['text'],
-                        'callback_data' => $button['callback_data'] ?? 'noop',
-                    ]
-                ];
-            }
-            $params['reply_markup'] = json_encode([
-                'inline_keyboard' => $keyboard,
-            ]);
-        }
+        $this->attachInlineKeyboard($params, $buttons);
 
         try {
             $response = Http::post("{$this->apiUrl}/sendPhoto", $params);
@@ -309,20 +283,7 @@ class BotService
         }
 
         // Формируем inline keyboard
-        if (!empty($buttons)) {
-            $keyboard = [];
-            foreach ($buttons as $button) {
-                $keyboard[] = [
-                    [
-                        'text' => $button['text'],
-                        'callback_data' => $button['callback_data'] ?? 'noop',
-                    ]
-                ];
-            }
-            $params['reply_markup'] = json_encode([
-                'inline_keyboard' => $keyboard,
-            ]);
-        }
+        $this->attachInlineKeyboard($params, $buttons);
 
         try {
             // Проверяем, это локальный файл или URL/file_id
@@ -355,6 +316,33 @@ class BotService
     }
 
     /**
+     * Добавить inline keyboard к параметрам запроса.
+     *
+     * @param array &$params Параметры запроса (модифицируются по ссылке)
+     * @param array $buttons Массив кнопок [['text' => '...', 'callback_data' => '...']]
+     */
+    protected function attachInlineKeyboard(array &$params, array $buttons): void
+    {
+        if (empty($buttons)) {
+            return;
+        }
+
+        $keyboard = [];
+        foreach ($buttons as $button) {
+            $keyboard[] = [
+                [
+                    'text' => $button['text'],
+                    'callback_data' => $button['callback_data'] ?? 'noop',
+                ]
+            ];
+        }
+
+        $params['reply_markup'] = json_encode([
+            'inline_keyboard' => $keyboard,
+        ]);
+    }
+
+    /**
      * Ответить на callback query.
      */
     protected function answerCallbackQuery(string $callbackQueryId, ?string $text = null): void
@@ -368,6 +356,25 @@ class BotService
         } catch (\Exception $e) {
             Log::error('Failed to answer callback query', ['message' => $e->getMessage()]);
         }
+    }
+
+    /**
+     * Отправить уведомление об истечении срока оплаты.
+     *
+     * TODO: Доработать при подключении платёжной системы
+     */
+    public function sendPaymentExpiredMessage(User $user, \App\Models\Payment $payment): bool
+    {
+        if (!$user->telegram_id) {
+            return false;
+        }
+
+        $text = "⏳ Время ожидания оплаты истекло.\n\n"
+            . "Тариф: {$payment->tariff_name}\n"
+            . "Сумма: {$payment->amount} ₽\n\n"
+            . "Вы можете повторить оплату в разделе «Тарифы».";
+
+        return $this->sendMessage($user->telegram_id, $text);
     }
 
     /**

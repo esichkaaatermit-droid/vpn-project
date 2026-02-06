@@ -4,7 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Payment;
 use App\Models\User;
-use App\Services\BotService;
+use App\Services\Telegram\BotService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;

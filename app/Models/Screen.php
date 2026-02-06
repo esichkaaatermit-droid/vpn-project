@@ -36,14 +36,6 @@ class Screen extends Model
     }
 
     /**
-     * Get the start screen.
-     */
-    public static function getStartScreen(): ?self
-    {
-        return static::findByKey('main.menu');
-    }
-
-    /**
      * Check if screen has a handler.
      */
     public function hasHandler(): bool
