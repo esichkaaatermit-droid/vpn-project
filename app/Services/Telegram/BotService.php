@@ -424,10 +424,9 @@ class BotService
         }
 
         $keyboard = [];
-        $rowIndex = 0;
         $usedRows = [];  // Запоминаем какие row уже обработаны
         
-        foreach ($buttons as $index => $button) {
+        foreach ($buttons as $button) {
             $rowNum = $button['row'] ?? 0;
             $buttonData = [
                 'text' => $button['text'],
