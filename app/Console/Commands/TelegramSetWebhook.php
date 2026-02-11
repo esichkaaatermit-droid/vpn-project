@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Services\BotService;
+use App\Services\Telegram\BotService;
 use Illuminate\Console\Command;
 
 class TelegramSetWebhook extends Command
@@ -13,7 +13,7 @@ class TelegramSetWebhook extends Command
     public function handle(BotService $botService): int
     {
         $url = $this->argument('url') ?? route('telegram.webhook');
-        $secret = config('services.telegram.webhook_secret');
+        $secret = config('telegram.webhook_secret');
 
         $this->info("Устанавливаю webhook: {$url}");
 

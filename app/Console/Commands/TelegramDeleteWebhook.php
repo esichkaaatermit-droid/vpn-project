@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Services\BotService;
+use App\Services\Telegram\BotService;
 use Illuminate\Console\Command;
 
 class TelegramDeleteWebhook extends Command
