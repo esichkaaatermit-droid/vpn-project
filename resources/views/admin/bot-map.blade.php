@@ -217,8 +217,8 @@
                             </div>
 
                             <!-- Текст экрана -->
-                            <div class="text-gray-600 text-sm mb-3 max-h-20 overflow-hidden">
-                                {{ Str::limit($screen->text, 150) }}
+                            <div class="text-gray-600 text-sm mb-3">
+                                {{ $screen->text }}
                             </div>
 
                             <!-- Handler -->

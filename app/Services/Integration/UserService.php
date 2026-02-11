@@ -2,8 +2,13 @@
 
 namespace App\Services\Integration;
 
+use App\Mail\EmailVerificationMail;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * Сервис для работы с пользователями.
@@ -11,6 +16,7 @@ use Illuminate\Support\Facades\Log;
  * Отвечает за:
  * - Получение профиля пользователя
  * - Управление подписками
+ * - Привязка email к Telegram
  * - Интеграция с внешним API (в будущем)
  */
 class UserService
@@ -91,5 +97,69 @@ class UserService
     {
         $subscription = $this->getSubscriptionInfo($user);
         return $subscription !== null && ($subscription['is_active'] ?? false);
+    }
+
+    /**
+     * Запросить привязку email к Telegram.
+     * Отправляет письмо с ссылкой для подтверждения.
+     *
+     * @return array{success: bool, message: string}
+     */
+    public function requestEmailVerification(int $telegramId, string $email): array
+    {
+        $email = strtolower(trim($email));
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['success' => false, 'message' => 'Неверный формат email. Проверьте введённый адрес.'];
+        }
+
+        // Rate-limit: не более 3 запросов в 10 минут на пользователя
+        $rateLimitKey = "email_verify_rate:{$telegramId}";
+        $attempts = (int) Cache::get($rateLimitKey, 0);
+
+        if ($attempts >= 3) {
+            return ['success' => false, 'message' => 'Слишком много запросов. Попробуйте через 10 минут.'];
+        }
+
+        Cache::put($rateLimitKey, $attempts + 1, now()->addMinutes(10));
+
+        // Удаляем старые токены для этой пары email+telegram
+        DB::table('email_verification_tokens')
+            ->where('email', $email)
+            ->where('telegram_id', $telegramId)
+            ->delete();
+
+        $token = Str::random(64);
+        $expiresAt = now()->addDay();
+
+        DB::table('email_verification_tokens')->insert([
+            'email' => $email,
+            'telegram_id' => $telegramId,
+            'token' => $token,
+            'expires_at' => $expiresAt,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $confirmUrl = url("/auth/email/confirm/{$token}");
+
+        try {
+            Mail::to($email)->send(new EmailVerificationMail($email, $confirmUrl));
+        } catch (\Throwable $e) {
+            Log::error('Failed to send email verification', [
+                'email' => $email,
+                'telegram_id' => $telegramId,
+                'error' => $e->getMessage(),
+            ]);
+            return [
+                'success' => false,
+                'message' => 'Не удалось отправить письмо. Попробуйте позже.',
+            ];
+        }
+
+        return [
+            'success' => true,
+            'message' => "На {$email} отправлено письмо с ссылкой для подтверждения. Перейдите по ссылке в письме.",
+        ];
     }
 }

@@ -6,6 +6,7 @@ use App\Services\Integration\ConfigService;
 use App\Services\Integration\TariffService;
 use App\Services\Integration\UserService;
 use App\Services\Telegram\BotService;
+use App\Services\Telegram\TelegramApiClient;
 use Illuminate\Support\ServiceProvider;
 
 /**
@@ -26,9 +27,15 @@ class BotServiceProvider extends ServiceProvider
             return new ConfigService($app->make(UserService::class));
         });
 
+        // Telegram API клиент
+        $this->app->singleton(TelegramApiClient::class);
+
         // Основной сервис бота
         $this->app->singleton(BotService::class, function ($app) {
-            return new BotService($app->make(UserService::class));
+            return new BotService(
+                $app->make(UserService::class),
+                $app->make(TelegramApiClient::class)
+            );
         });
     }
 

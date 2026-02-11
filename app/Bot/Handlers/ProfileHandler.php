@@ -2,6 +2,7 @@
 
 namespace App\Bot\Handlers;
 
+use App\Bot\Handlers\Concerns\BuildsButtons;
 use App\Models\Screen;
 use App\Models\User;
 use App\Services\Integration\UserService;
@@ -13,6 +14,8 @@ use App\Services\Integration\UserService;
  */
 class ProfileHandler implements HandlerInterface
 {
+    use BuildsButtons;
+
     public function __construct(
         protected UserService $userService
     ) {}
@@ -29,12 +32,15 @@ class ProfileHandler implements HandlerInterface
         $text = $this->formatProfileText($user, $chatId);
 
         // Кнопки из экрана
-        $buttons = [];
-        foreach ($screen->buttons as $button) {
-            $buttons[] = [
-                'text' => $button->text,
-                'callback_data' => $button->next_screen_key ?? 'noop',
-            ];
+        $buttons = $this->buildButtons($screen);
+
+        // Добавляем кнопку "Привязать email" если у пользователя нет email
+        if ($user && !$user->email) {
+            array_unshift($buttons, [
+                'text' => '📧 Привязать email',
+                'callback_data' => 'action:bind_email',
+                'row' => 0,
+            ]);
         }
 
         return [

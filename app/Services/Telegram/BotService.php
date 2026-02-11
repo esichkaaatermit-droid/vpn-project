@@ -7,7 +7,6 @@ use App\Models\Screen;
 use App\Models\User;
 use App\Models\UserState;
 use App\Services\Integration\UserService;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -17,19 +16,19 @@ use Illuminate\Support\Facades\Log;
  * - Обработку входящих сообщений и callback-запросов
  * - Отображение экранов
  * - Управление состоянием пользователя
- * - Управление webhook
+ * 
+ * HTTP-вызовы к Telegram API делегирует в TelegramApiClient.
  */
 class BotService
 {
-    protected string $token;
-    protected string $apiUrl;
-
     public function __construct(
-        protected UserService $userService
-    ) {
-        $this->token = config('telegram.bot_token');
-        $this->apiUrl = "https://api.telegram.org/bot{$this->token}";
-    }
+        protected UserService $userService,
+        protected TelegramApiClient $telegram
+    ) {}
+
+    // ─────────────────────────────────────────────
+    // Обработка входящих update
+    // ─────────────────────────────────────────────
 
     /**
      * Обработка входящего update от Telegram.
@@ -59,10 +58,18 @@ class BotService
         // Получаем состояние пользователя
         $userState = UserState::findOrCreateByChatId($chatId);
 
-        // Команда /start
+        // Команда /start — сбрасывает режим ввода
         if ($text === '/start') {
+            $userState->clearData();
             $startScreen = config('telegram.settings.start_screen', 'main.menu');
             $this->showScreen($chatId, $startScreen, $userState);
+            return;
+        }
+
+        // Режим ввода email (ожидание после "Привязать email")
+        $awaitingInput = $userState->getData('awaiting_input');
+        if ($awaitingInput === 'email') {
+            $this->handleEmailInput($chatId, $text, $userState);
             return;
         }
 
@@ -85,6 +92,24 @@ class BotService
     }
 
     /**
+     * Обработка введённого email (привязка аккаунта).
+     */
+    protected function handleEmailInput(int $chatId, string $text, UserState $userState): void
+    {
+        $userState->clearData();
+
+        $result = $this->userService->requestEmailVerification($chatId, $text);
+
+        $this->telegram->sendMessage($chatId, $result['message']);
+
+        if ($result['success']) {
+            $this->showScreen($chatId, 'profile.my', $userState);
+        } else {
+            $this->telegram->sendMessage($chatId, "Нажмите /start чтобы вернуться в главное меню.");
+        }
+    }
+
+    /**
      * Обработка нажатия inline-кнопки.
      */
     protected function handleCallbackQuery(array $callbackQuery): void
@@ -94,16 +119,42 @@ class BotService
         $data = $callbackQuery['data'] ?? '';
 
         // Отвечаем на callback
-        $this->answerCallbackQuery($callbackQuery['id']);
+        $this->telegram->answerCallbackQuery($callbackQuery['id']);
 
         // Получаем состояние
         $userState = UserState::findOrCreateByChatId($chatId);
+
+        // Обработка специальных действий (action:*)
+        if (str_starts_with($data, 'action:')) {
+            $this->handleActionCallback($chatId, $data, $userState, $messageId);
+            return;
+        }
 
         // Показываем экран по ключу (редактируем текущее сообщение)
         if ($data) {
             $this->showScreen($chatId, $data, $userState, $messageId);
         }
     }
+
+    /**
+     * Обработка callback с action:* (привязка email, отмена ввода и т.д.)
+     */
+    protected function handleActionCallback(int $chatId, string $data, UserState $userState, int $messageId): void
+    {
+        if ($data === 'action:bind_email') {
+            $userState->setData('awaiting_input', 'email');
+            $this->telegram->sendMessage($chatId, "📧 Введите ваш email для привязки аккаунта:", [
+                ['text' => '❌ Отмена', 'callback_data' => 'action:cancel_input', 'row' => 0],
+            ]);
+        } elseif ($data === 'action:cancel_input') {
+            $userState->clearData();
+            $this->showScreen($chatId, 'profile.my', $userState, $messageId);
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    // Отображение экранов
+    // ─────────────────────────────────────────────
 
     /**
      * Показать экран пользователю.
@@ -119,7 +170,7 @@ class BotService
 
         if (!$screen) {
             Log::warning("Screen not found: {$screenKey}");
-            $this->sendMessage($chatId, "😕 Экран не найден.\n\nНажмите /start чтобы начать сначала.");
+            $this->telegram->sendMessage($chatId, "😕 Экран не найден.\n\nНажмите /start чтобы начать сначала.");
             return false;
         }
 
@@ -159,28 +210,26 @@ class BotService
 
         // Если есть медиа — отправляем новое сообщение (редактировать нельзя)
         if ($document) {
-            // Удаляем старое сообщение если было
             if ($messageId) {
-                $this->deleteMessage($chatId, $messageId);
+                $this->telegram->deleteMessage($chatId, $messageId);
             }
-            return $this->sendDocument($chatId, $document, $text, $buttons);
+            return $this->telegram->sendDocument($chatId, $document, $text, $buttons);
         }
         
         if ($photo) {
-            // Удаляем старое сообщение если было
             if ($messageId) {
-                $this->deleteMessage($chatId, $messageId);
+                $this->telegram->deleteMessage($chatId, $messageId);
             }
-            return $this->sendPhoto($chatId, $photo, $text, $buttons);
+            return $this->telegram->sendPhoto($chatId, $photo, $text, $buttons);
         }
 
         // Если есть messageId — редактируем существующее сообщение
         if ($messageId) {
-            return $this->editMessage($chatId, $messageId, $text, $buttons);
+            return $this->telegram->editMessage($chatId, $messageId, $text, $buttons);
         }
 
         // Иначе отправляем новое сообщение
-        return $this->sendMessage($chatId, $text, $buttons);
+        return $this->telegram->sendMessage($chatId, $text, $buttons);
     }
 
     /**
@@ -201,273 +250,16 @@ class BotService
         return $buttons;
     }
 
-    /**
-     * Редактировать существующее сообщение.
-     * 
-     * @param int $chatId ID чата
-     * @param int $messageId ID сообщения для редактирования
-     * @param string $text Новый текст сообщения
-     * @param array $buttons Массив кнопок [['text' => '...', 'callback_data' => '...']]
-     */
-    public function editMessage(int $chatId, int $messageId, string $text, array $buttons = []): bool
-    {
-        $params = [
-            'chat_id' => $chatId,
-            'message_id' => $messageId,
-            'text' => $text,
-            'parse_mode' => 'HTML',
-        ];
-
-        // Формируем inline keyboard
-        $this->attachInlineKeyboard($params, $buttons);
-
-        try {
-            $response = Http::post("{$this->apiUrl}/editMessageText", $params);
-            
-            if (!$response->successful()) {
-                $error = $response->json();
-                
-                // Если сообщение не изменилось — это не ошибка
-                if (str_contains($error['description'] ?? '', 'message is not modified')) {
-                    return true;
-                }
-                
-                Log::error('Telegram editMessage error', [
-                    'response' => $error,
-                    'params' => array_diff_key($params, ['reply_markup' => 1]),
-                ]);
-                
-                // Fallback: отправляем новое сообщение
-                return $this->sendMessage($chatId, $text, $buttons);
-            }
-
-            return true;
-        } catch (\Exception $e) {
-            Log::error('Telegram editMessage exception', [
-                'message' => $e->getMessage(),
-            ]);
-            // Fallback: отправляем новое сообщение
-            return $this->sendMessage($chatId, $text, $buttons);
-        }
-    }
+    // ─────────────────────────────────────────────
+    // Публичные методы (делегация в TelegramApiClient)
+    // ─────────────────────────────────────────────
 
     /**
-     * Удалить сообщение.
-     * 
-     * @param int $chatId ID чата
-     * @param int $messageId ID сообщения для удаления
-     */
-    public function deleteMessage(int $chatId, int $messageId): bool
-    {
-        try {
-            $response = Http::post("{$this->apiUrl}/deleteMessage", [
-                'chat_id' => $chatId,
-                'message_id' => $messageId,
-            ]);
-            
-            return $response->successful();
-        } catch (\Exception $e) {
-            Log::error('Telegram deleteMessage exception', [
-                'message' => $e->getMessage(),
-            ]);
-            return false;
-        }
-    }
-
-    /**
-     * Отправить сообщение с кнопками.
-     * 
-     * @param int $chatId ID чата
-     * @param string $text Текст сообщения
-     * @param array $buttons Массив кнопок [['text' => '...', 'callback_data' => '...']]
+     * Отправить сообщение (публичный доступ для других сервисов).
      */
     public function sendMessage(int $chatId, string $text, array $buttons = []): bool
     {
-        $params = [
-            'chat_id' => $chatId,
-            'text' => $text,
-            'parse_mode' => 'HTML',
-        ];
-
-        // Формируем inline keyboard
-        $this->attachInlineKeyboard($params, $buttons);
-
-        try {
-            $response = Http::post("{$this->apiUrl}/sendMessage", $params);
-            
-            if (!$response->successful()) {
-                Log::error('Telegram API error', [
-                    'response' => $response->json(),
-                    'params' => array_diff_key($params, ['reply_markup' => 1]),
-                ]);
-                return false;
-            }
-
-            return true;
-        } catch (\Exception $e) {
-            Log::error('Telegram API exception', [
-                'message' => $e->getMessage(),
-            ]);
-            return false;
-        }
-    }
-
-    /**
-     * Отправить фото с подписью и кнопками.
-     * 
-     * @param int $chatId ID чата
-     * @param string $photo URL или file_id фото
-     * @param string|null $caption Подпись к фото
-     * @param array $buttons Массив кнопок
-     */
-    public function sendPhoto(int $chatId, string $photo, ?string $caption = null, array $buttons = []): bool
-    {
-        $params = [
-            'chat_id' => $chatId,
-            'photo' => $photo,
-        ];
-
-        if ($caption) {
-            $params['caption'] = $caption;
-            $params['parse_mode'] = 'HTML';
-        }
-
-        // Формируем inline keyboard
-        $this->attachInlineKeyboard($params, $buttons);
-
-        try {
-            $response = Http::post("{$this->apiUrl}/sendPhoto", $params);
-            
-            if (!$response->successful()) {
-                Log::error('Telegram sendPhoto error', [
-                    'response' => $response->json(),
-                    'photo' => $photo,
-                ]);
-                return false;
-            }
-
-            return true;
-        } catch (\Exception $e) {
-            Log::error('Telegram sendPhoto exception', ['message' => $e->getMessage()]);
-            return false;
-        }
-    }
-
-    /**
-     * Отправить документ (файл) с подписью и кнопками.
-     * 
-     * @param int $chatId ID чата
-     * @param string $document URL, file_id или путь к файлу
-     * @param string|null $caption Подпись к документу
-     * @param array $buttons Массив кнопок
-     * @param string|null $filename Имя файла для отображения
-     */
-    public function sendDocument(int $chatId, string $document, ?string $caption = null, array $buttons = [], ?string $filename = null): bool
-    {
-        $params = [
-            'chat_id' => $chatId,
-        ];
-
-        if ($caption) {
-            $params['caption'] = $caption;
-            $params['parse_mode'] = 'HTML';
-        }
-
-        // Формируем inline keyboard
-        $this->attachInlineKeyboard($params, $buttons);
-
-        try {
-            // Проверяем, это локальный файл или URL/file_id
-            if (file_exists($document)) {
-                // Локальный файл — отправляем как multipart
-                $response = Http::attach(
-                    'document',
-                    file_get_contents($document),
-                    $filename ?? basename($document)
-                )->post("{$this->apiUrl}/sendDocument", $params);
-            } else {
-                // URL или file_id
-                $params['document'] = $document;
-                $response = Http::post("{$this->apiUrl}/sendDocument", $params);
-            }
-            
-            if (!$response->successful()) {
-                Log::error('Telegram sendDocument error', [
-                    'response' => $response->json(),
-                    'document' => $document,
-                ]);
-                return false;
-            }
-
-            return true;
-        } catch (\Exception $e) {
-            Log::error('Telegram sendDocument exception', ['message' => $e->getMessage()]);
-            return false;
-        }
-    }
-
-    /**
-     * Добавить inline keyboard к параметрам запроса.
-     *
-     * @param array &$params Параметры запроса (модифицируются по ссылке)
-     * @param array $buttons Массив кнопок [['text' => '...', 'callback_data' => '...', 'row' => int]]
-     * 
-     * Логика row:
-     * - Кнопки с одинаковым row объединяются в один ряд
-     * - row=0 означает "свой отдельный ряд" (не группируется)
-     * - Порядок рядов определяется порядком кнопок (по order)
-     */
-    protected function attachInlineKeyboard(array &$params, array $buttons): void
-    {
-        if (empty($buttons)) {
-            return;
-        }
-
-        $keyboard = [];
-        $usedRows = [];  // Запоминаем какие row уже обработаны
-        
-        foreach ($buttons as $button) {
-            $rowNum = $button['row'] ?? 0;
-            $buttonData = [
-                'text' => $button['text'],
-                'callback_data' => $button['callback_data'] ?? 'noop',
-            ];
-            
-            if ($rowNum === 0) {
-                // row = 0 — отдельный ряд для этой кнопки
-                $keyboard[] = [$buttonData];
-            } else {
-                // Проверяем, был ли уже этот row
-                if (isset($usedRows[$rowNum])) {
-                    // Добавляем в существующий ряд
-                    $keyboard[$usedRows[$rowNum]][] = $buttonData;
-                } else {
-                    // Создаём новый ряд
-                    $keyboard[] = [$buttonData];
-                    $usedRows[$rowNum] = count($keyboard) - 1;
-                }
-            }
-        }
-
-        $params['reply_markup'] = json_encode([
-            'inline_keyboard' => $keyboard,
-        ]);
-    }
-
-    /**
-     * Ответить на callback query.
-     */
-    protected function answerCallbackQuery(string $callbackQueryId, ?string $text = null): void
-    {
-        try {
-            $params = ['callback_query_id' => $callbackQueryId];
-            if ($text) {
-                $params['text'] = $text;
-            }
-            Http::post("{$this->apiUrl}/answerCallbackQuery", $params);
-        } catch (\Exception $e) {
-            Log::error('Failed to answer callback query', ['message' => $e->getMessage()]);
-        }
+        return $this->telegram->sendMessage($chatId, $text, $buttons);
     }
 
     /**
@@ -486,7 +278,7 @@ class BotService
             . "Сумма: {$payment->amount} ₽\n\n"
             . "Вы можете повторить оплату в разделе «Тарифы».";
 
-        return $this->sendMessage($user->telegram_id, $text);
+        return $this->telegram->sendMessage($user->telegram_id, $text);
     }
 
     /**
@@ -494,20 +286,7 @@ class BotService
      */
     public function setWebhook(?string $url = null, ?string $secretToken = null): array
     {
-        $url = $url ?? config('telegram.webhook_url');
-        $secretToken = $secretToken ?? config('telegram.webhook_secret');
-
-        try {
-            $params = ['url' => $url];
-            if ($secretToken) {
-                $params['secret_token'] = $secretToken;
-            }
-
-            $response = Http::post("{$this->apiUrl}/setWebhook", $params);
-            return $response->json();
-        } catch (\Exception $e) {
-            return ['ok' => false, 'description' => $e->getMessage()];
-        }
+        return $this->telegram->setWebhook($url, $secretToken);
     }
 
     /**
@@ -515,12 +294,7 @@ class BotService
      */
     public function getWebhookInfo(): array
     {
-        try {
-            $response = Http::get("{$this->apiUrl}/getWebhookInfo");
-            return $response->json();
-        } catch (\Exception $e) {
-            return ['ok' => false, 'description' => $e->getMessage()];
-        }
+        return $this->telegram->getWebhookInfo();
     }
 
     /**
@@ -528,11 +302,6 @@ class BotService
      */
     public function deleteWebhook(): array
     {
-        try {
-            $response = Http::post("{$this->apiUrl}/deleteWebhook");
-            return $response->json();
-        } catch (\Exception $e) {
-            return ['ok' => false, 'description' => $e->getMessage()];
-        }
+        return $this->telegram->deleteWebhook();
     }
 }

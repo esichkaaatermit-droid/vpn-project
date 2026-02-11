@@ -86,7 +86,8 @@ class UserState extends Model
      */
     public function getData(string $key, mixed $default = null): mixed
     {
-        return $this->data[$key] ?? $default;
+        $data = $this->data ?? [];
+        return $data[$key] ?? $default;
     }
 
     /**

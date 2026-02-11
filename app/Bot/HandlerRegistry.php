@@ -3,6 +3,7 @@
 namespace App\Bot;
 
 use App\Bot\Handlers\HandlerInterface;
+use App\Bot\Handlers\InstallConfigHandler;
 use App\Bot\Handlers\MainMenuHandler;
 use App\Bot\Handlers\ProfileHandler;
 use App\Bot\Handlers\TariffHandler;
@@ -13,7 +14,7 @@ use Illuminate\Support\Facades\Log;
  * Реестр обработчиков экранов.
  * 
  * Маппит строковые handler_id из БД на классы обработчиков.
- * В БД хранятся ТОЛЬКО строковые ID (например, "profile.my_profile"),
+ * В БД хранятся ТОЛЬКО строковые ID (например, "profile.my"),
  * НЕ имена классов.
  */
 class HandlerRegistry
@@ -26,8 +27,14 @@ class HandlerRegistry
      */
     protected static array $handlers = [
         'main.menu' => MainMenuHandler::class,
-        'profile.my_profile' => ProfileHandler::class,
+        'profile.my' => ProfileHandler::class,
         'tariffs.pricing' => TariffHandler::class,
+        // Выдача конфигов при установке
+        'install.android.config' => InstallConfigHandler::class,
+        'install.iphone' => InstallConfigHandler::class,
+        'install.appletv' => InstallConfigHandler::class,
+        'install.windows' => InstallConfigHandler::class,
+        'install.mac' => InstallConfigHandler::class,
     ];
 
     /**
@@ -95,6 +102,7 @@ class HandlerRegistry
             Log::error("Handler error: {$handlerId}", [
                 'message' => $e->getMessage(),
                 'chat_id' => $chatId,
+                'trace' => $e->getTraceAsString(),
             ]);
             return null;
         }

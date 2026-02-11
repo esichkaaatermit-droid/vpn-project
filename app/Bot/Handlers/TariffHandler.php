@@ -2,6 +2,7 @@
 
 namespace App\Bot\Handlers;
 
+use App\Bot\Handlers\Concerns\BuildsButtons;
 use App\Models\Screen;
 use App\Services\Integration\TariffService;
 
@@ -12,6 +13,8 @@ use App\Services\Integration\TariffService;
  */
 class TariffHandler implements HandlerInterface
 {
+    use BuildsButtons;
+
     public function __construct(
         protected TariffService $tariffService
     ) {}
@@ -27,18 +30,9 @@ class TariffHandler implements HandlerInterface
         // Формируем текст
         $text = $this->formatTariffsText($screen->text, $tariffs);
 
-        // Кнопки из экрана
-        $buttons = [];
-        foreach ($screen->buttons as $button) {
-            $buttons[] = [
-                'text' => $button->text,
-                'callback_data' => $button->next_screen_key ?? 'noop',
-            ];
-        }
-
         return [
             'text' => $text,
-            'buttons' => $buttons,
+            'buttons' => $this->buildButtons($screen),
         ];
     }
 

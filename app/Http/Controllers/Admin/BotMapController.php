@@ -114,13 +114,11 @@ class BotMapController extends Controller
         // Название экрана
         $title = e($screen->title ?: $key);
         
-        // Текст экрана (укороченный)
+        // Текст экрана (полный)
         $textHtml = '';
         if ($screen->text) {
-            $shortText = mb_substr($screen->text, 0, 60);
-            if (mb_strlen($screen->text) > 60) $shortText .= '...';
-            $shortText = e(str_replace("\n", " ", $shortText));
-            $textHtml = "<div class=\"text-gray-500 text-sm ml-6\">\"{$shortText}\"</div>";
+            $fullText = e(str_replace("\n", " ", $screen->text));
+            $textHtml = "<div class=\"text-gray-500 text-sm ml-6\">\"{$fullText}\"</div>";
         }
 
         // Собираем кнопки
