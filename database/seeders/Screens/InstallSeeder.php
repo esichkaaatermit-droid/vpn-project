@@ -205,6 +205,13 @@ class InstallSeeder extends Seeder
             'order' => 1,
         ]);
 
+        ScreenButton::create([
+            'screen_id' => $installAndroidProblem->id,
+            'text' => 'Назад',
+            'next_screen_key' => 'install.android.instructions',
+            'order' => 2,
+        ]);
+
         // ============================================
         // IPHONE/IPAD
         // ============================================
@@ -288,6 +295,13 @@ class InstallSeeder extends Seeder
             'order' => 1,
         ]);
 
+        ScreenButton::create([
+            'screen_id' => $installIphoneOtherProblem->id,
+            'text' => 'Назад',
+            'next_screen_key' => 'install.iphone.other.instructions',
+            'order' => 2,
+        ]);
+
         // iPhone - Problem
         $installIphoneProblem = Screen::create([
             'key' => 'install.iphone.problem',
@@ -301,6 +315,13 @@ class InstallSeeder extends Seeder
             'text' => 'Выбрать проблему',
             'next_screen_key' => 'faq.broken.iphone',
             'order' => 1,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installIphoneProblem->id,
+            'text' => 'Назад',
+            'next_screen_key' => 'install.iphone',
+            'order' => 2,
         ]);
 
         // ============================================
@@ -418,6 +439,13 @@ class InstallSeeder extends Seeder
             'order' => 1,
         ]);
 
+        ScreenButton::create([
+            'screen_id' => $installAppletvOtherProblem->id,
+            'text' => 'Назад',
+            'next_screen_key' => 'install.appletv.other.instructions',
+            'order' => 2,
+        ]);
+
         // AppleTV - Problem
         $installAppletvProblem = Screen::create([
             'key' => 'install.appletv.problem',
@@ -431,6 +459,13 @@ class InstallSeeder extends Seeder
             'text' => 'Выбрать проблему',
             'next_screen_key' => 'faq.broken.appletv',
             'order' => 1,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installAppletvProblem->id,
+            'text' => 'Назад',
+            'next_screen_key' => 'install.appletv',
+            'order' => 2,
         ]);
 
         // ============================================
@@ -516,6 +551,13 @@ class InstallSeeder extends Seeder
             'order' => 1,
         ]);
 
+        ScreenButton::create([
+            'screen_id' => $installWindowsOtherProblem->id,
+            'text' => 'Назад',
+            'next_screen_key' => 'install.windows.other.instructions',
+            'order' => 2,
+        ]);
+
         // Windows - Problem
         $installWindowsProblem = Screen::create([
             'key' => 'install.windows.problem',
@@ -529,6 +571,13 @@ class InstallSeeder extends Seeder
             'text' => 'Выбрать проблему',
             'next_screen_key' => 'faq.broken.windows',
             'order' => 1,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installWindowsProblem->id,
+            'text' => 'Назад',
+            'next_screen_key' => 'install.windows',
+            'order' => 2,
         ]);
 
         // ============================================
@@ -614,6 +663,13 @@ class InstallSeeder extends Seeder
             'order' => 1,
         ]);
 
+        ScreenButton::create([
+            'screen_id' => $installMacOtherProblem->id,
+            'text' => 'Назад',
+            'next_screen_key' => 'install.mac.other.instructions',
+            'order' => 2,
+        ]);
+
         // Mac - Problem
         $installMacProblem = Screen::create([
             'key' => 'install.mac.problem',
@@ -627,6 +683,13 @@ class InstallSeeder extends Seeder
             'text' => 'Выбрать проблему',
             'next_screen_key' => 'faq.broken.mac',
             'order' => 1,
+        ]);
+
+        ScreenButton::create([
+            'screen_id' => $installMacProblem->id,
+            'text' => 'Назад',
+            'next_screen_key' => 'install.mac',
+            'order' => 2,
         ]);
     }
 }

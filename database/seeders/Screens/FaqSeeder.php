@@ -350,7 +350,7 @@ class FaqSeeder extends Seeder
         ScreenButton::create([
             'screen_id' => $faqBrokenAndroid->id,
             'text' => 'Назад',
-            'next_screen_key' => 'faq.broken',
+            'next_screen_key' => 'install.main',
             'order' => 5,
         ]);
 
@@ -478,7 +478,7 @@ class FaqSeeder extends Seeder
         ScreenButton::create([
             'screen_id' => $faqBrokenIphone->id,
             'text' => 'Назад',
-            'next_screen_key' => 'faq.broken',
+            'next_screen_key' => 'install.main',
             'order' => 5,
         ]);
 
@@ -606,7 +606,7 @@ class FaqSeeder extends Seeder
         ScreenButton::create([
             'screen_id' => $faqBrokenAndroidtv->id,
             'text' => 'Назад',
-            'next_screen_key' => 'faq.broken',
+            'next_screen_key' => 'install.main',
             'order' => 5,
         ]);
 
@@ -734,7 +734,7 @@ class FaqSeeder extends Seeder
         ScreenButton::create([
             'screen_id' => $faqBrokenAppletv->id,
             'text' => 'Назад',
-            'next_screen_key' => 'faq.broken',
+            'next_screen_key' => 'install.main',
             'order' => 5,
         ]);
 
@@ -862,7 +862,7 @@ class FaqSeeder extends Seeder
         ScreenButton::create([
             'screen_id' => $faqBrokenWindows->id,
             'text' => 'Назад',
-            'next_screen_key' => 'faq.broken',
+            'next_screen_key' => 'install.main',
             'order' => 5,
         ]);
 
@@ -990,7 +990,7 @@ class FaqSeeder extends Seeder
         ScreenButton::create([
             'screen_id' => $faqBrokenMac->id,
             'text' => 'Назад',
-            'next_screen_key' => 'faq.broken',
+            'next_screen_key' => 'install.main',
             'order' => 5,
         ]);
 
