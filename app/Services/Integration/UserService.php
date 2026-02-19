@@ -6,6 +6,7 @@ use App\Mail\EmailVerificationMail;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
@@ -21,6 +22,7 @@ use Illuminate\Support\Facades\Mail;
  */
 class UserService
 {
+    use Concerns\SendsBackendAuth;
     /**
      * Найти или создать пользователя по Telegram ID.
      */
@@ -47,22 +49,38 @@ class UserService
      */
     public function getUserProfile(string $email): array
     {
-        // TODO: Заменить на реальный API-запрос к backend
-        // Пример будущего кода:
-        // $response = Http::get(config('services.backend.url') . '/api/users/profile', [
-        //     'email' => $email
-        // ]);
-        // return $response->json();
+        $baseUrl = config('services.backend.url');
+        if (empty($baseUrl)) {
+            Log::debug("UserService::getUserProfile called (stub)", ['email' => $email]);
+            return [
+                'email' => $email,
+                'tariff' => 'Start',
+                'expires_at' => '2026-12-31',
+                'devices_used' => 2,
+                'devices_limit' => 5,
+            ];
+        }
 
-        Log::debug("UserService::getUserProfile called", ['email' => $email]);
+        $response = Http::withHeaders($this->backendHeaders())
+            ->get($baseUrl . '/api/users/profile', ['email' => $email]);
 
-        // Заглушка — возвращаем тестовые данные
+        if ($response->successful()) {
+            $data = $response->json();
+            if (is_array($data)) {
+                return $data;
+            }
+        }
+
+        Log::warning('UserService::getUserProfile API error', [
+            'email' => $email,
+            'status' => $response->status(),
+        ]);
         return [
             'email' => $email,
-            'tariff' => 'Start',
-            'expires_at' => '2026-12-31',
-            'devices_used' => 2,
-            'devices_limit' => 5,
+            'tariff' => '',
+            'expires_at' => '',
+            'devices_used' => 0,
+            'devices_limit' => 0,
         ];
     }
 

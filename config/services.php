@@ -40,4 +40,9 @@ return [
         'webhook_secret' => env('TELEGRAM_WEBHOOK_SECRET'),
     ],
 
+    'backend' => [
+        'url' => env('BACKEND_API_URL'),
+        'authorization' => env('BACKEND_AUTHORIZATION'),
+    ],
+
 ];

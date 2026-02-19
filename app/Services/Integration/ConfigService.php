@@ -3,6 +3,8 @@
 namespace App\Services\Integration;
 
 use App\Models\User;
+use App\Services\Integration\Concerns\SendsBackendAuth;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -16,6 +18,8 @@ use Illuminate\Support\Str;
  */
 class ConfigService
 {
+    use SendsBackendAuth;
+
     public function __construct(
         protected UserService $userService
     ) {}
@@ -30,20 +34,27 @@ class ConfigService
      */
     public function getVpnConfig(string $email): array
     {
-        // TODO: Заменить на реальный API-запрос
-        // Пример будущего кода:
-        // $response = Http::get(config('services.backend.url') . '/api/vpn/config', [
-        //     'email' => $email
-        // ]);
-        // return $response->json();
+        $baseUrl = config('services.backend.url');
+        if (empty($baseUrl)) {
+            Log::debug("ConfigService::getVpnConfig called (stub)", ['email' => $email]);
+            return [
+                'config_url' => 'https://example.com/config.ovpn',
+                'qr_code' => 'base64_encoded_qr_' . Str::random(32),
+            ];
+        }
 
-        Log::debug("ConfigService::getVpnConfig called", ['email' => $email]);
+        $response = Http::withHeaders($this->backendHeaders())
+            ->get($baseUrl . '/api/vpn/config', ['email' => $email]);
 
-        // Заглушка — возвращаем тестовые данные
-        return [
-            'config_url' => 'https://example.com/config.ovpn',
-            'qr_code' => 'base64_encoded_qr_' . Str::random(32),
-        ];
+        if ($response->successful()) {
+            return $response->json() ?? ['config_url' => '', 'qr_code' => ''];
+        }
+
+        Log::warning('ConfigService::getVpnConfig API error', [
+            'email' => $email,
+            'status' => $response->status(),
+        ]);
+        return ['config_url' => '', 'qr_code' => ''];
     }
 
     /**

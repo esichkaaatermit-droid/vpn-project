@@ -2,7 +2,9 @@
 
 namespace App\Services\Integration;
 
+use App\Services\Integration\Concerns\SendsBackendAuth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -15,6 +17,7 @@ use Illuminate\Support\Facades\Log;
  */
 class TariffService
 {
+    use SendsBackendAuth;
     /**
      * Получить список всех тарифов.
      * 
@@ -24,37 +27,25 @@ class TariffService
      */
     public function getTariffs(): array
     {
-        // TODO: Заменить на реальный API-запрос
-        // Пример будущего кода:
-        // $response = Http::get(config('services.backend.url') . '/api/tariffs');
-        // return $response->json();
+        $baseUrl = config('services.backend.url');
+        if (empty($baseUrl)) {
+            Log::debug("TariffService::getTariffs called (stub)");
+            return [
+                ['id' => 1, 'name' => 'Start', 'price' => 299, 'period' => 'month', 'description' => 'Базовый тариф на 1 месяц'],
+                ['id' => 2, 'name' => 'Годовой', 'price' => 2990, 'period' => 'year', 'description' => 'Выгодный годовой тариф'],
+                ['id' => 3, 'name' => 'Gold', 'price' => 499, 'period' => 'month', 'description' => 'Премиум тариф'],
+            ];
+        }
 
-        Log::debug("TariffService::getTariffs called");
+        $response = Http::withHeaders($this->backendHeaders())
+            ->get($baseUrl . '/api/tariffs');
 
-        // Заглушка — возвращаем тестовые данные
-        return [
-            [
-                'id' => 1,
-                'name' => 'Start',
-                'price' => 299,
-                'period' => 'month',
-                'description' => 'Базовый тариф на 1 месяц',
-            ],
-            [
-                'id' => 2,
-                'name' => 'Годовой',
-                'price' => 2990,
-                'period' => 'year',
-                'description' => 'Выгодный годовой тариф',
-            ],
-            [
-                'id' => 3,
-                'name' => 'Gold',
-                'price' => 499,
-                'period' => 'month',
-                'description' => 'Премиум тариф с расширенными возможностями',
-            ],
-        ];
+        if ($response->successful()) {
+            return $response->json() ?? [];
+        }
+
+        Log::warning('TariffService::getTariffs API error', ['status' => $response->status()]);
+        return [];
     }
 
     /**
